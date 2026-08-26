@@ -370,68 +370,187 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
     <p class="why">À la racine · couvre 2 des 6 parties (P3 et P5) · c'est LE fichier DevOps du projet</p>
   </div>
   <div class="prose">
-  <p>C'est la recette que GitLab exécute automatiquement à chaque <code>git push</code>. Tout est dedans : quoi compiler, quoi tester, quoi déployer, dans quel ordre.</p>
+  <p>C'est la recette que GitLab exécute automatiquement à chaque <code>git push</code>. On le prend bloc par bloc — tout ton fichier y passe.</p>
 
-  <h4>Ta structure : 4 stages, 5 jobs</h4>
-  <div class="tw">
-  <table>
-    <tr><th>Stage</th><th>Jobs</th><th>Rôle</th></tr>
-    <tr><td><code>build</code></td><td><code>build-spring</code></td><td>Compilation de Spring Boot</td></tr>
-    <tr><td><code>test</code></td><td><code>test-spring</code> · <code>test-django</code></td><td>Tests unitaires des deux applications</td></tr>
-    <tr><td><code>deploy</code></td><td><code>push-images</code></td><td>Construction des images et envoi vers l'ACR</td></tr>
-    <tr><td><code>update</code></td><td><code>update-apps</code></td><td>Redémarrage des App Services</td></tr>
-  </table>
+  <h4>L'en-tête : les stages et les variables</h4>
+  <pre><code>stages:
+  - build    # Compilation de l'application Spring Boot
+  - test     # Tests unitaires des deux applications
+  - deploy   # Construction et envoi des images vers l'ACR
+  - update   # Redemarrage des App Services pour recuperer les images
+
+variables:
+  # GitLab ne sauvegarde en cache que ce qui se trouve dans $CI_PROJECT_DIR.
+  # On y redirige donc le depot local de Maven et le cache de pip, sinon la
+  # directive cache: n'aurait aucun effet (ils sont dans ~/ par defaut).
+  MAVEN_REPO: "$CI_PROJECT_DIR/.m2/repository"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # Noms des ressources Azure creees par Terraform (voir terraform/variables.tf)
+  RESOURCE_GROUP: "rg-abtesting-66045"
+  SPRING_APP: "app-spring-66045"
+  DJANGO_APP: "app-django-66045"</code></pre>
+
+  <div class="lines">
+    <div class="k">stages:</div><div class="v">L'ordre des étapes. Elles s'exécutent <b>l'une après l'autre</b> : si un stage échoue, les suivants sont annulés. C'est ce qui garantit qu'on ne déploie jamais du code qui ne compile pas.</div>
+    <div class="k">variables:</div><div class="v">Des variables disponibles dans <b>tous</b> les jobs. À distinguer des variables secrètes, qui, elles, sont définies dans l'interface GitLab et n'apparaissent nulle part dans le dépôt.</div>
+    <div class="k">$CI_PROJECT_DIR</div><div class="v">Variable fournie par GitLab : le chemin du dépôt cloné dans le conteneur du job.</div>
+    <div class="k">RESOURCE_GROUP<br>SPRING_APP · DJANGO_APP</div><div class="v">Les noms Azure sortis du corps des jobs. Ils sont déclarés une fois, en haut, et réutilisés plus bas — si un nom change côté Terraform, il n'y a qu'un endroit à corriger ici.</div>
   </div>
 
-  <p>Trois mots à ne jamais confondre :</p>
+  <div class="trap">
+    <span class="tag">⭐ La question la plus fine de ton projet</span>
+    <p class="q">« À quoi servent <code>MAVEN_REPO</code> et <code>PIP_CACHE_DIR</code> ? »</p>
+    <p>« <strong>GitLab ne met en cache que ce qui se trouve sous <code>$CI_PROJECT_DIR</code></strong>, le dossier du dépôt cloné. Or Maven écrit par défaut dans <code>~/.m2</code> et pip dans <code>~/.cache/pip</code>, donc en dehors. Ces deux variables redirigent leurs caches à l'intérieur du projet — sans elles, ma directive <code>cache:</code> pointerait sur des dossiers vides et ne servirait strictement à rien. »</p>
+    <p class="q">« Et pourquoi tu passes <code>-Dmaven.repo.local</code> à Maven, mais rien du tout à pip ? »</p>
+    <p>La question de suivi, et tu as la bonne réponse : « parce que <code>PIP_CACHE_DIR</code> est une variable d'environnement que <strong>pip lit nativement</strong> : la déclarer suffit. <code>MAVEN_REPO</code>, en revanche, est un nom que j'ai inventé — Maven ne le connaît pas. Il faut donc le lui passer explicitement avec l'option <code>-Dmaven.repo.local</code> sur la ligne de commande. »</p>
+  </div>
+
+  <h4>Stage 1 — <code>build-spring</code></h4>
+  <pre><code>build-spring:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21
+  cache:
+    key: maven
+    paths:
+      - .m2/repository/
+  script:
+    - cd spring-boot
+    - mvn compile -Dmaven.repo.local=$MAVEN_REPO
+  artifacts:
+    paths:
+      - spring-boot/target/
+    expire_in: 1h</code></pre>
+
   <div class="lines">
-    <div class="k">pipeline</div><div class="v">L'exécution complète, déclenchée par un push. Un pipeline contient des stages.</div>
-    <div class="k">stage</div><div class="v">Une étape. Les stages s'exécutent <b>l'un après l'autre</b>. Si un stage échoue, les suivants sont annulés.</div>
-    <div class="k">job</div><div class="v">Une tâche concrète dans un stage. Les jobs d'un même stage peuvent tourner <b>en parallèle</b> — mais chez toi il n'y a qu'un seul runner, donc ils s'enchaînent.</div>
+    <div class="k">image: maven:3.9-<br>eclipse-temurin-21</div><div class="v">L'image Docker dans laquelle le job tourne : elle contient Maven 3.9 et le JDK 21. <b>Chaque job démarre dans un conteneur neuf</b> — c'est ce qui rend le résultat reproductible, et c'est aussi ce qui rend le cache et les artifacts nécessaires.</div>
+    <div class="k">cache: key: maven</div><div class="v">La <b>clé</b> du cache. Deux jobs qui déclarent la même clé partagent le même cache : <code>build-spring</code> et <code>test-spring</code> utilisent tous les deux <code>maven</code>, donc les dépendances téléchargées par le premier servent au second — et aux exécutions suivantes du pipeline.</div>
+    <div class="k">paths: .m2/repository/</div><div class="v">Ce qu'on met en cache : le dépôt Maven local, celui qui contient les <code>.jar</code> des dépendances téléchargées.</div>
+    <div class="k">- cd spring-boot</div><div class="v">Le runner clone tout le dépôt à la racine du conteneur ; il faut donc entrer dans le bon dossier.</div>
+    <div class="k">mvn compile<br>-Dmaven.repo.local=<br>$MAVEN_REPO</div><div class="v">Compile le code Java, en disant à Maven d'utiliser le dépôt local redirigé dans le projet (voir l'encadré ci-dessus).</div>
+    <div class="k">artifacts: paths:<br>spring-boot/target/</div><div class="v">Le dossier produit par la compilation (les <code>.class</code>) est conservé et transmis aux jobs des stages suivants. C'est le passage de relais vers <code>test-spring</code>.</div>
+    <div class="k">expire_in: 1h</div><div class="v">L'artifact est supprimé au bout d'une heure. Il n'a besoin de vivre que le temps du pipeline : le garder plus longtemps ne ferait qu'occuper de l'espace chez GitLab.</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">La distinction à ne jamais rater</span>
+    <p class="q">« Quelle différence entre <code>cache</code> et <code>artifacts</code> ? »</p>
+    <p><b><code>artifacts</code></b> = transmettre un <b>résultat de travail</b> d'un job au suivant, <b>dans le même pipeline</b>. Ici : les classes compilées.<br>
+    <b><code>cache</code></b> = conserver des fichiers <b>réutilisables</b> entre les jobs <b>et entre les exécutions successives du pipeline</b>. Ici : les dépendances téléchargées.<br>
+    Formule courte : « l'artifact est le fruit du travail, le cache est l'outillage. Le premier est jetable et daté, le second est réutilisable indéfiniment. »</p>
+  </div>
+
+  <h4>Stage 2 — <code>test-spring</code> et <code>test-django</code></h4>
+  <pre><code>test-spring:
+  stage: test
+  image: maven:3.9-eclipse-temurin-21
+  cache:
+    key: maven
+    paths:
+      - .m2/repository/
+  script:
+    - cd spring-boot
+    - mvn test -Dmaven.repo.local=$MAVEN_REPO
+
+test-django:
+  stage: test
+  image: python:3.12-alpine
+  cache:
+    key: pip
+    paths:
+      - .cache/pip/
+  script:
+    - cd django
+    - pip install -r requirements.txt
+    - python manage.py test</code></pre>
+
+  <div class="lines">
+    <div class="k">mvn test</div><div class="v">Lance les tests unitaires Java. Comme l'artifact <code>target/</code> a été récupéré automatiquement, Maven constate que tout est déjà compilé et affiche <em>« Nothing to compile — all classes are up to date »</em>. Sans l'artifact, il recompilerait tout : <code>mvn test</code> déclenche la phase <code>compile</code> du cycle de vie Maven.</div>
+    <div class="k">(pas de <code>dependencies:</code>)</div><div class="v">Inutile ici : par défaut, un job télécharge les artifacts de <b>tous</b> les jobs des stages précédents. On ne l'écrirait que pour en restreindre la liste.</div>
+    <div class="k">key: pip</div><div class="v">Une clé différente de <code>maven</code> : deux écosystèmes, deux caches séparés. Rien à voir l'un avec l'autre.</div>
+    <div class="k">pip install -r<br>requirements.txt</div><div class="v">Réinstalle les dépendances Python — le conteneur est neuf, elles ne sont pas là. Mais grâce au cache, <b>rien n'est retéléchargé</b> : pip lit les paquets déjà présents dans <code>.cache/pip/</code>.</div>
+    <div class="k">python manage.py test</div><div class="v">Lance les tests Django (les classes qui héritent de <code>django.test.TestCase</code>).</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">La question piège qui compare deux de tes fichiers</span>
+    <p class="q">« Ici tu fais <code>pip install</code> tout court, mais dans ton Dockerfile tu écris <code>pip install --no-cache-dir</code>. Tu te contredis ? »</p>
+    <p>Non, et savoir répondre vaut de l'or : « les objectifs sont <strong>inverses</strong>. Dans le pipeline je veux <strong>garder</strong> le cache entre deux exécutions pour gagner du temps — donc surtout pas <code>--no-cache-dir</code>. Dans l'image Docker, je veux au contraire <strong>ne pas embarquer</strong> ce cache : une fois l'image construite il ne resservira jamais, il ne ferait que l'alourdir. Même outil, deux contextes, deux décisions opposées. »</p>
+  </div>
+
+  <h4>Stage 3 — <code>push-images</code></h4>
+  <pre><code>push-images:
+  stage: deploy
+  image: docker:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  before_script:
+    - docker login "$ACR_NAME.azurecr.io" -u "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET"
+  script:
+    - docker build -t "$ACR_NAME.azurecr.io/spring-boot:latest" ./spring-boot
+    - docker push "$ACR_NAME.azurecr.io/spring-boot:latest"
+    - docker build -t "$ACR_NAME.azurecr.io/django:latest" ./django
+    - docker push "$ACR_NAME.azurecr.io/django:latest"</code></pre>
+
+  <div class="lines">
+    <div class="k">image: docker:latest</div><div class="v">L'image officielle qui contient le <b>client</b> Docker en ligne de commande.</div>
+    <div class="k">rules: - if:<br>'$CI_COMMIT_BRANCH<br>== "main"'</div><div class="v">« N'inclus ce job dans le pipeline que si le push vient de la branche <code>main</code>. » Conséquence concrète : un commit sur une branche de travail est compilé et testé, mais <b>ne redéploie rien</b> sur Azure.</div>
+    <div class="k">before_script:</div><div class="v">S'exécute avant le <code>script:</code>, dans le même conteneur. On y isole la <b>préparation</b> (l'authentification) du <b>travail</b> (build et push). Si le login échoue, le job s'arrête là.</div>
+    <div class="k">docker login<br>"$ACR_NAME.azurecr.io"</div><div class="v">S'authentifier auprès du registre Azure. Format d'une adresse d'ACR : <code>&lt;nom&gt;.azurecr.io</code>. Les identifiants sont ceux du Service Principal — le compte robot.</div>
+    <div class="k">docker build -t<br>"$ACR_NAME.azurecr.io/<br>spring-boot:latest"<br>./spring-boot</div><div class="v">Construire l'image <b>en la nommant directement avec l'adresse du registre de destination</b>, à partir du Dockerfile du dossier <code>./spring-boot</code>. C'est le nom de l'image qui dit à Docker où la pousser.</div>
+    <div class="k">docker push …</div><div class="v">L'envoyer. <b>Le nom doit être rigoureusement identique à celui du <code>build -t</code></b>, sinon Docker ne saurait pas quelle image envoyer.</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">La question à tiroir sur le runner</span>
+    <p class="q">« Comment un job qui tourne dans un conteneur peut-il lui-même faire <code>docker build</code> ? Il y a un Docker dedans ? »</p>
+    <p>Non — et ton commentaire en tête de fichier le dit déjà : « le runner a été enregistré avec un volume <code>-v /var/run/docker.sock:/var/run/docker.sock</code>. Ça monte le socket du démon Docker de la machine hôte dans le conteneur du job. Le client Docker de l'image <code>docker:latest</code> envoie donc ses ordres au démon de ma machine : c'est lui qui construit et qui pousse. L'alternative serait Docker-in-Docker, plus lourd à configurer. C'est la technique de l'accès au démon hôte, en fin de TD 07. »</p>
+  </div>
+
+  <h4>Stage 4 — <code>update-apps</code></h4>
+  <pre><code>update-apps:
+  stage: update
+  image: mcr.microsoft.com/azure-cli:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - az login --service-principal -u "$ARM_CLIENT_ID" -p "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID"
+    - az webapp restart --name "$SPRING_APP" --resource-group "$RESOURCE_GROUP"
+    - az webapp restart --name "$DJANGO_APP" --resource-group "$RESOURCE_GROUP"</code></pre>
+
+  <div class="lines">
+    <div class="k">image: mcr.microsoft.com/<br>azure-cli:latest</div><div class="v">L'image officielle Microsoft contenant la commande <code>az</code>. MCR = Microsoft Container Registry.</div>
+    <div class="k">az login<br>--service-principal</div><div class="v">Connexion <b>non interactive</b> à Azure. Le pipeline ne peut évidemment pas ouvrir un navigateur pour valider une connexion : il utilise les identifiants du compte robot.</div>
+    <div class="k">az webapp restart</div><div class="v">Redémarre l'App Service. C'est ce qui déclenche le nouveau téléchargement de l'image.</div>
+  </div>
+
+  <div class="say">
+    <span class="tag">Pourquoi un simple redémarrage — ton commentaire a la réponse</span>
+    <p>« Les images sont poussées sous le tag <code>:latest</code>, qui est un tag <strong>mutable</strong> : son contenu change, mais son nom reste le même. App Service ne re-télécharge pas une image dont le nom n'a pas bougé — il ne va la chercher qu'au démarrage. Le redémarrage le force donc à repartir sur la dernière version poussée. Un seul job pour les deux applications, ce qui évite de refaire deux fois le même <code>az login</code>. »</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Si le prof creuse — la vraie amélioration possible</span>
+    <p class="q">« <code>:latest</code>, c'est une bonne pratique ? »</p>
+    <p>Réponds franchement, ça montre de la hauteur : « non, pas idéalement. En production on tague avec quelque chose d'immuable, typiquement <code>$CI_COMMIT_SHA</code> : on sait alors exactement quelle version tourne, on peut revenir en arrière, et l'App Service détecte le changement de nom sans qu'on ait besoin de le redémarrer. J'ai choisi <code>:latest</code> parce que le nom de l'image est aussi écrit dans <code>terraform/variables.tf</code> — un tag variable m'aurait obligé à faire remonter le SHA jusqu'à la configuration Terraform à chaque déploiement. »</p>
+    <p class="q">« Et pourquoi l'ordre <code>deploy</code> puis <code>update</code> ? »</p>
+    <p>« Parce que si je redémarrais les App Services <em>avant</em> d'avoir poussé les nouvelles images, ils re-téléchargeraient les anciennes. L'ordre des stages garantit que <code>update</code> ne tourne que si <code>deploy</code> a entièrement réussi. »</p>
   </div>
 
   <h4>⭐ Pourquoi 5 jobs et pas 8 — la question qui te distingue</h4>
-  <p>La consigne laisse le nombre de jobs libre. Tu as appliqué une règle : <strong>aucun job ne doit refaire le travail d'un autre</strong>. C'est un raisonnement, pas un hasard, et c'est exactement ce qu'un correcteur cherche.</p>
+  <p>La consigne laisse le nombre de jobs libre. Tu as appliqué une règle : <strong>aucun job ne doit refaire le travail d'un autre</strong>. C'est un raisonnement, pas un hasard, et c'est exactement ce qu'un correcteur cherche. Les trois justifications sont d'ailleurs écrites en commentaires dans ton fichier :</p>
 
   <div class="say">
-    <span class="tag">Les trois justifications, à savoir dérouler</span>
-    <p>« <b>Pas de <code>build-django</code></b> : Java se compile, Python s'interprète. Un job qui se contenterait d'installer les dépendances Django ferait doublon avec <code>test-django</code>, qui doit de toute façon les installer pour lancer les tests. »</p>
-    <p>« <b><code>build-spring</code> et <code>test-spring</code> restent séparés</b> parce que le premier transmet <code>spring-boot/target/</code> au second via <code>artifacts</code>. Sans cet échange, les deux compileraient les mêmes sources — <code>mvn test</code> passe par la phase <code>compile</code> du cycle de vie Maven. Avec l'artifact, le job de test affiche <em>Nothing to compile, all classes are up to date</em>. »</p>
+    <span class="tag">À savoir dérouler</span>
+    <p>« <b>Pas de <code>build-django</code></b> : Java se compile, Python s'interprète. Un job qui se contenterait d'installer les dépendances ferait doublon avec <code>test-django</code>, qui doit de toute façon les installer pour lancer les tests. »</p>
+    <p>« <b><code>build-spring</code> et <code>test-spring</code> restent séparés</b> parce que le premier transmet <code>target/</code> au second via <code>artifacts</code> — le job de test ne recompile donc rien. »</p>
     <p>« <b>Un seul job pour <code>deploy</code> et pour <code>update</code></b> : le dépôt n'a qu'un runner, donc deux jobs dans un même stage ne tourneraient pas en parallèle de toute façon, et referaient chacun le même <code>docker login</code> ou le même <code>az login</code>. »</p>
   </div>
 
-  <h4>⭐ <code>artifacts</code> et <code>cache</code> — la partie technique la plus fine de ton projet</h4>
-  <p>Le point de départ : <strong>chaque job démarre dans un conteneur neuf</strong>. C'est ce qui rend les résultats reproductibles, mais ça veut dire que par défaut, chaque job repart de zéro — il recompile et retélécharge tout. Tu as deux mécanismes contre ça, et il faut savoir les distinguer :</p>
-
-  <div class="lines">
-    <div class="k">artifacts</div><div class="v">Transmet des fichiers <b>d'un job au suivant, dans le même pipeline</b>. Chez toi : <code>spring-boot/target/</code> de <code>build-spring</code> vers <code>test-spring</code>. C'est un passage de relais.</div>
-    <div class="k">cache</div><div class="v">Conserve des fichiers <b>entre les jobs ET entre les exécutions successives du pipeline</b>. Chez toi : le dépôt Maven local (<code>.m2/repository/</code>) et le cache de pip (<code>.cache/pip/</code>). Les dépendances ne sont téléchargées qu'une fois, pas à chaque push.</div>
-  </div>
-
-  <div class="trap">
-    <span class="tag">Le détail que presque personne ne sait expliquer — apprends-le</span>
-    <p class="q">« Pourquoi les variables <code>MAVEN_REPO</code> et <code>PIP_CACHE_DIR</code> en haut de ton fichier ? »</p>
-    <p>« Parce que <strong>GitLab ne met en cache que ce qui se trouve sous <code>$CI_PROJECT_DIR</code></strong>, le dossier du projet cloné. Or Maven et pip écrivent par défaut dans le répertoire personnel de l'utilisateur, en dehors. Ces deux variables redirigent leurs caches à l'intérieur du projet — sans elles, ma directive <code>cache:</code> n'aurait strictement aucun effet. »</p>
-  </div>
-
-  <div class="trap">
-    <span class="tag">La question piège qui va avec</span>
-    <p class="q">« Tu mets du cache dans le pipeline, mais <code>--no-cache-dir</code> dans tes Dockerfile. Tu te contredis ? »</p>
-    <p>Non, et c'est un très bon signe que tu saches répondre : « les objectifs sont inverses. Dans le pipeline, je veux <strong>garder</strong> les dépendances entre deux exécutions pour gagner du temps. Dans l'image Docker, je veux au contraire <strong>ne pas embarquer</strong> le cache de pip, qui ne servirait plus à rien une fois l'image construite et ne ferait que l'alourdir. »</p>
-  </div>
-
-  <h4>Le déclenchement conditionnel</h4>
-  <p><code>build</code> et <code>test</code> tournent sur toutes les branches. <code>deploy</code> et <code>update</code> sont limités à <code>main</code> :</p>
-  <pre><code>rules:
-  - if: '$CI_COMMIT_BRANCH == "main"'</code></pre>
-  <p>Traduction : « n'inclus ce job dans le pipeline que si la branche du push s'appelle <code>main</code> ». Conséquence concrète : un commit sur une branche de travail est <strong>vérifié</strong> (compilé, testé) mais ne <strong>redéploie rien</strong> sur Azure. C'est exactement ce qu'on attend d'un pipeline sérieux.</p>
-  <p><code>$CI_COMMIT_BRANCH</code> est une variable que GitLab injecte automatiquement dans chaque job. Les autres à connaître : <code>$CI_COMMIT_TAG</code> (le nom du tag, vide si ce n'est pas un push de tag), <code>$CI_COMMIT_SHA</code> (le hash), <code>$CI_PROJECT_DIR</code> (le dossier du dépôt cloné).</p>
-
   <h4>Les 4 variables secrètes</h4>
-  <p>Dans GitLab → <code>Settings</code> → <code>CI/CD</code> → <code>Variables</code>, en <b>Masked</b> pour les secrets :</p>
+  <p>Elles ne sont <strong>pas</strong> dans le fichier — uniquement dans GitLab → <code>Settings</code> → <code>CI/CD</code> → <code>Variables</code>, en <b>Masked</b> pour les secrets :</p>
   <div class="lines">
     <div class="k">ACR_NAME</div><div class="v">Le nom de ton registre, sans le <code>.azurecr.io</code>. Pas secret, c'est juste un nom.</div>
-    <div class="k">ARM_CLIENT_ID</div><div class="v">L'identifiant du Service Principal (le compte robot Azure).</div>
+    <div class="k">ARM_CLIENT_ID</div><div class="v">L'identifiant du Service Principal. Sert au <code>docker login</code> <b>et</b> au <code>az login</code>.</div>
     <div class="k">ARM_CLIENT_SECRET</div><div class="v">Son mot de passe. Masqué.</div>
     <div class="k">ARM_TENANT_ID</div><div class="v">L'identifiant de ton annuaire Azure, nécessaire au <code>az login</code>.</div>
   </div>
@@ -439,21 +558,11 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
 
   <div class="say">
     <span class="tag">Le point sécurité, à placer</span>
-    <p>« Aucun secret n'est écrit dans le dépôt. Le pipeline ne connaît que des noms de variables ; les valeurs vivent dans l'interface GitLab, en masqué, et sont injectées dans l'environnement du job au moment de l'exécution. Si le dépôt fuite, les identifiants Azure ne fuitent pas avec. »</p>
-  </div>
-
-  <h4>Le runner — la question qui tombe presque à coup sûr</h4>
-  <p>GitLab ne fait <em>pas</em> tourner ton pipeline. Il se contente de dire « j'ai un job pour quelqu'un ». Celui qui l'exécute, c'est un <strong>runner</strong> : un programme que tu as enregistré toi-même auprès de GitLab, avec un token.</p>
-  <p>Chez toi, ce runner est <strong>un conteneur Docker qui tourne sur ta machine</strong>. Pour chaque job, il fait quatre choses : il démarre un conteneur neuf basé sur l'<code>image:</code> du job, il y clone le dépôt, il exécute le <code>script:</code>, puis il détruit le conteneur et renvoie les logs à GitLab.</p>
-
-  <div class="trap">
-    <span class="tag">La question à tiroir</span>
-    <p class="q">« Comment un job qui tourne dans un conteneur peut-il lui-même faire <code>docker build</code> ? Il y a Docker dedans ? »</p>
-    <p>Non. À l'enregistrement du runner, tu as monté le socket Docker de la machine hôte dans le conteneur : <code>-v /var/run/docker.sock:/var/run/docker.sock</code>. Le client Docker du job envoie donc ses ordres au démon Docker <b>de ta machine</b>. L'alternative, c'est Docker-in-Docker (DinD), plus lourd à configurer. C'est la technique « accès au démon hôte » du TD 07, et ton README le documente.</p>
+    <p>« Aucun secret n'est écrit dans le dépôt. Le pipeline ne connaît que des noms de variables ; les valeurs vivent dans l'interface GitLab, en masqué, et sont injectées dans l'environnement du job au moment de l'exécution. Si le dépôt fuite, les identifiants Azure ne fuitent pas avec. Et le Service Principal est une identité dédiée à la CI : si elle est compromise, je la révoque avec <code>az ad sp credential reset</code> sans toucher à mon compte personnel. »</p>
   </div>
 
   <div class="note">
-    <b>Le seul fichier que je n'ai pas encore lu.</b> Ton <code>.gitlab-ci.yml</code> commence par un point, donc le Finder ne l'a pas copié quand tu as poussé le projet. Tout ce qui est écrit ci-dessus vient de la description détaillée que tu en fais dans ton <code>README.md</code> — c'est fiable sur le fond, mais je n'ai pas vu la syntaxe exacte des jobs. <b>Relis le fichier toi-même au moins une fois avant demain</b>, ligne par ligne, avec cette page à côté.
+    <b>Un mot sur tes commentaires.</b> Ton fichier en contient une dizaine, et ils expliquent tous un <em>pourquoi</em>, jamais un <em>quoi</em>. C'est exactement ce qu'on attend d'un commentaire. Si le prof pointe une ligne que tu as oubliée, <b>lis ton propre commentaire à voix haute</b> : dans la moitié des cas, la réponse est juste au-dessus.
   </div>
   </div>
 
@@ -937,7 +1046,7 @@ http {
 
   <div class="note">
     <b>Deux choses à faire avant de fermer cette page.</b><br>
-    <b>1.</b> Ouvre ton <code>.gitlab-ci.yml</code> et relis-le une fois, ligne par ligne, avec le fichier n°1 à côté — c'est le seul de tes fichiers que je n'ai pas pu lire.<br>
+    <b>1.</b> Ouvre tes fichiers dans ton IDE pendant que tu lis cette page, et fais le va-et-vient : chaque bloc de code cité ici est le tien, à l'identique.<br>
     <b>2.</b> Relis ton propre <code>README.md</code>. Il est excellent, et il contient déjà la moitié des réponses de cette page — le prof l'a probablement lu avant de te recevoir.
   </div>
   </div>

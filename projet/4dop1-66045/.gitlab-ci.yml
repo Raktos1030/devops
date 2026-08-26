@@ -1,0 +1,117 @@
+# Pipeline CI/CD du projet A/B testing.
+# Le pipeline tourne sur le runner docker enregistre dans le depot, demarre
+# avec un volume vers /var/run/docker.sock (voir fin du TD 07) : les jobs du
+# stage deploy peuvent donc utiliser le demon Docker de la machine hote.
+
+stages:
+  - build    # Compilation de l'application Spring Boot
+  - test     # Tests unitaires des deux applications
+  - deploy   # Construction et envoi des images vers l'ACR
+  - update   # Redemarrage des App Services pour recuperer les images
+
+variables:
+  # GitLab ne sauvegarde en cache que ce qui se trouve dans $CI_PROJECT_DIR.
+  # On y redirige donc le depot local de Maven et le cache de pip, sinon la
+  # directive cache: n'aurait aucun effet (ils sont dans ~/ par defaut).
+  MAVEN_REPO: "$CI_PROJECT_DIR/.m2/repository"
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  # Noms des ressources Azure creees par Terraform (voir terraform/variables.tf)
+  RESOURCE_GROUP: "rg-abtesting-66045"
+  SPRING_APP: "app-spring-66045"
+  DJANGO_APP: "app-django-66045"
+
+# ---------------------------------------------------------------------------
+# Stage build : compilation
+# ---------------------------------------------------------------------------
+
+# Compilation de l'application Spring Boot.
+# Le dossier target/ est passe en artifact au stage suivant : le job de test
+# n'a donc pas a recompiler les sources depuis zero.
+build-spring:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21
+  cache:
+    key: maven
+    paths:
+      - .m2/repository/
+  script:
+    - cd spring-boot
+    - mvn compile -Dmaven.repo.local=$MAVEN_REPO
+  artifacts:
+    paths:
+      - spring-boot/target/
+    expire_in: 1h
+
+# Pas de job de build pour Django : Python est interprete, il n'y a pas d'etape
+# de compilation. Installer les dependances ici serait refaire le travail de
+# test-django, qui doit de toute facon les installer pour lancer les tests.
+
+# ---------------------------------------------------------------------------
+# Stage test : tests unitaires
+# ---------------------------------------------------------------------------
+
+# Tests unitaires Spring Boot. Recupere automatiquement l'artifact target/
+# produit par build-spring et le cache Maven : rien n'est recompile ni
+# retelecharge inutilement.
+test-spring:
+  stage: test
+  image: maven:3.9-eclipse-temurin-21
+  cache:
+    key: maven
+    paths:
+      - .m2/repository/
+  script:
+    - cd spring-boot
+    - mvn test -Dmaven.repo.local=$MAVEN_REPO
+
+# Tests unitaires Django. Chaque job s'executant dans un conteneur neuf, le
+# pip install est rejoue, mais il est servi depuis le cache : aucun
+# telechargement.
+test-django:
+  stage: test
+  image: python:3.12-alpine
+  cache:
+    key: pip
+    paths:
+      - .cache/pip/
+  script:
+    - cd django
+    - pip install -r requirements.txt
+    - python manage.py test
+
+# ---------------------------------------------------------------------------
+# Stage deploy : images Docker vers l'Azure Container Registry
+# ---------------------------------------------------------------------------
+
+# Un seul job pour les deux images : le depot n'a qu'un seul runner, deux jobs
+# ne s'executeraient donc pas en parallele et refereaient chacun le meme
+# docker login.
+push-images:
+  stage: deploy
+  image: docker:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  before_script:
+    - docker login "$ACR_NAME.azurecr.io" -u "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET"
+  script:
+    - docker build -t "$ACR_NAME.azurecr.io/spring-boot:latest" ./spring-boot
+    - docker push "$ACR_NAME.azurecr.io/spring-boot:latest"
+    - docker build -t "$ACR_NAME.azurecr.io/django:latest" ./django
+    - docker push "$ACR_NAME.azurecr.io/django:latest"
+
+# ---------------------------------------------------------------------------
+# Stage update : prise en compte des nouvelles images
+# ---------------------------------------------------------------------------
+
+# Les images sont poussees sous le tag :latest, qu'App Service ne re-tire pas
+# tout seul. Un redemarrage force les deux applications a repartir sur la
+# derniere image. Un seul job = un seul az login pour les deux applications.
+update-apps:
+  stage: update
+  image: mcr.microsoft.com/azure-cli:latest
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+  script:
+    - az login --service-principal -u "$ARM_CLIENT_ID" -p "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID"
+    - az webapp restart --name "$SPRING_APP" --resource-group "$RESOURCE_GROUP"
+    - az webapp restart --name "$DJANGO_APP" --resource-group "$RESOURCE_GROUP"
