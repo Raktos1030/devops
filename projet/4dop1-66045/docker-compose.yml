@@ -1,0 +1,31 @@
+services:
+  spring-boot:
+    build: ./spring-boot
+    container_name: app-spring-boot
+    ports:
+      - "8080:8080"
+    networks:
+      - ab-network
+
+  django:
+    build: ./django
+    container_name: app-django
+    ports:
+      - "8000:8000"
+    networks:
+      - ab-network
+
+  nginx:
+    build: ./nginx
+    container_name: nginx-ab
+    ports:
+      - "80:80"
+    depends_on:
+      - spring-boot
+      - django
+    networks:
+      - ab-network
+
+networks:
+  ab-network:
+    driver: bridge
