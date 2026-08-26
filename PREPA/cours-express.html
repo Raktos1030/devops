@@ -202,8 +202,8 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
   <p>Ici, les deux versions sont deux applications web qui affichent quasiment la même chose :</p>
 
   <div class="kv">
-    <dl><dt>Version A</dt><dd class="ab va">Spring Boot · Java 21</dd><dd style="font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:13px;color:var(--ink2)">écoute sur le port 8080</dd></dl>
-    <dl><dt>Version B</dt><dd class="ab vb">Django · Python 3.12</dd><dd style="font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:13px;color:var(--ink2)">écoute sur le port 8000</dd></dl>
+    <dl><dt>Version A</dt><dd class="ab va">Spring Boot · Java 21</dd><dd style="font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:13px;color:var(--ink2)">dossier <code>spring-boot/</code> · port 8080</dd></dl>
+    <dl><dt>Version B</dt><dd class="ab vb">Django · Python 3.12</dd><dd style="font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:13px;color:var(--ink2)">dossier <code>django/</code> · port 8000</dd></dl>
   </div>
 
   <p>L'une affiche « Version SPRING BOOT », l'autre « Version DJANGO ». C'est <em>volontairement</em> nul comme contenu : ce sont des cobayes. Ce qui est évalué, ce n'est pas les applis.</p>
@@ -230,6 +230,15 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
   <div class="note">
     <b>Le mot « DevOps », si on te le demande.</b> C'est la culture qui consiste à supprimer le mur entre ceux qui écrivent le code (Dev) et ceux qui le font tourner en production (Ops), en automatisant tout ce qu'il y a entre les deux. Ton projet, c'est littéralement cette automatisation : personne ne copie un fichier à la main nulle part.
   </div>
+
+  <div class="trap">
+    <span class="tag">Avant tout — trois choses que tes fiches PREPA racontent de travers</span>
+    <p>Tes fiches ont été écrites sur une version plus ancienne du dépôt. Ton code a progressé depuis, et sur ces trois points elles te feraient dire des <strong>bêtises</strong> :</p>
+    <p><b>1. Ton pipeline a 5 jobs, pas 8.</b> Il n'y a pas de <code>build-django</code>, et les jobs de déploiement s'appellent <code>push-images</code> et <code>update-apps</code>, au singulier. Et surtout, il utilise <code>artifacts</code>, <code>cache</code> et <code>rules</code> — trois notions que les fiches ne mentionnent nulle part.</p>
+    <p><b>2. Ton <code>nginx-azure</code> ne souffre plus du problème du header <code>Host</code> : tu l'as résolu.</b> La fiche te fait dire « c'est une limite connue de mon implémentation ». C'est faux, et te dévaloriser sur ta meilleure idée serait dommage.</p>
+    <p><b>3. Ton Dockerfile Django ne fait plus <code>makemigrations</code></b>, seulement <code>migrate</code> — et tu as commenté pourquoi.</p>
+    <p>Cette page-ci est alignée sur ton vrai dépôt. En cas de contradiction avec une fiche PREPA, <strong>c'est cette page qui a raison</strong>.</p>
+  </div>
   </div>
 </section>
 
@@ -255,7 +264,7 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
 
   <div class="prose">
   <div class="note">
-    <b>Retiens ces trois chiffres</b> — ils reviennent tout le temps : <b>6</b> parties / 6 tags · <b>4</b> Dockerfile (spring-boot, django, nginx, nginx-azure) · <b>7</b> ressources Azure créées par Terraform.
+    <b>Retiens ces quatre chiffres</b> — ils reviennent tout le temps : <b>6</b> parties / 6 tags · <b>4</b> Dockerfile (spring-boot, django, nginx, nginx-azure) · <b>5</b> jobs sur <b>4</b> stages dans le pipeline · <b>7</b> ressources Azure créées par Terraform.
   </div>
   </div>
 </section>
@@ -285,12 +294,12 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
 
   <div class="prose">
   <p><strong>Ce qui fait l'alternance</strong>, c'est le <em>round-robin</em> : le comportement par défaut de Nginx quand on lui donne une liste de serveurs. Requête 1 → le premier, requête 2 → le deuxième, requête 3 → le premier… Tu n'as codé aucun tirage au sort.</p>
-  <p><strong>Ce qui permet à Nginx de trouver les applis</strong>, c'est le réseau Docker partagé. Dans un réseau Docker, un conteneur peut en joindre un autre <strong>par son nom de service</strong> : Docker fournit un DNS interne. C'est pour ça que la config Nginx écrit <code>server spring-boot:8080;</code> et pas une adresse IP.</p>
+  <p><strong>Ce qui permet à Nginx de trouver les applis</strong>, c'est le réseau Docker partagé. Dans un réseau Docker, un conteneur peut en joindre un autre <strong>par son nom de service</strong> : Docker fournit un DNS interne. C'est pour ça que ta config Nginx écrit <code>server spring-boot:8080;</code> et pas une adresse IP.</p>
 
   <div class="trap">
     <span class="tag">Piège classique</span>
     <p class="q">« Qu'est-ce qui fait le 50/50 ? »</p>
-    <p>Ne dis <strong>jamais</strong> « j'ai codé un randomiseur ». La réponse : « c'est le round-robin par défaut de la directive <code>upstream</code> de Nginx, je n'ai rien ajouté. Si je voulais du pondéré, j'écrirais <code>server X weight=70;</code>. »</p>
+    <p>Ne dis <strong>jamais</strong> « j'ai codé un randomiseur ». La réponse : « c'est le round-robin par défaut de la directive <code>upstream</code> de Nginx, je n'ai rien ajouté. Si je voulais du pondéré, j'écrirais <code>server X weight=70;</code>. » C'est d'ailleurs écrit dans le commentaire de ton propre fichier.</p>
   </div>
   </div>
 
@@ -298,7 +307,7 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
   <div class="prose"><p>Là, deux choses se sont passées, à deux moments différents. C'est la distinction la plus importante de tout le projet :</p>
 
   <div class="kv">
-    <dl><dt>Une seule fois, à la main</dt><dd>Terraform crée l'infra</dd><dd style="font-family:'IBM Plex Serif',serif;font-weight:400;font-size:14.5px;color:var(--ink2);margin-top:6px">Tu tapes <code>terraform apply</code> depuis ton PC. Ça crée les serveurs vides sur Azure. La consigne dit explicitement que Terraform reste manuel.</dd></dl>
+    <dl><dt>Une seule fois, à la main</dt><dd>Terraform crée l'infra</dd><dd style="font-family:'IBM Plex Serif',serif;font-weight:400;font-size:14.5px;color:var(--ink2);margin-top:6px">Tu tapes <code>terraform apply</code> depuis ton PC. Ça crée les serveurs vides sur Azure. Ton README le dit noir sur blanc : aucun job du pipeline n'exécute Terraform, comme demandé par la consigne.</dd></dl>
     <dl><dt>À chaque push, tout seul</dt><dd>Le pipeline remplit l'infra</dd><dd style="font-family:'IBM Plex Serif',serif;font-weight:400;font-size:14.5px;color:var(--ink2);margin-top:6px">GitLab compile, teste, fabrique les images Docker, les pousse sur Azure et redémarre les applis.</dd></dl>
   </div>
 
@@ -309,10 +318,10 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
     <div class="node">git push sur <b>main</b><span>GitLab détecte .gitlab-ci.yml</span></div>
     <div class="arrow">│<br>▼</div>
     <div class="stages">
-      <div class="stage"><h5>1 · build</h5><ul><li class="sa">build-spring</li><li class="sb">build-django</li></ul></div>
+      <div class="stage"><h5>1 · build</h5><ul><li class="sa">build-spring</li></ul></div>
       <div class="stage"><h5>2 · test</h5><ul><li class="sa">test-spring</li><li class="sb">test-django</li></ul></div>
-      <div class="stage"><h5>3 · deploy</h5><ul><li class="sa">push image A</li><li class="sb">push image B</li></ul></div>
-      <div class="stage"><h5>4 · update</h5><ul><li class="sa">restart app A</li><li class="sb">restart app B</li></ul></div>
+      <div class="stage"><h5>3 · deploy</h5><ul><li>push-images</li></ul></div>
+      <div class="stage"><h5>4 · update</h5><ul><li>update-apps</li></ul></div>
     </div>
     <div class="arrow">▼</div>
     <div class="split">
@@ -328,12 +337,12 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
   <div class="prose">
   <h4>Le vocabulaire Azure minimum</h4>
   <div class="lines">
-    <div class="k">Resource Group</div><div class="v">Un dossier logique qui contient toutes tes ressources Azure. Le supprimer supprime tout d'un coup.</div>
-    <div class="k">ACR<br>(Container Registry)</div><div class="v">Ton dépôt d'images Docker privé, chez Azure. C'est le « Docker Hub » perso du projet.</div>
+    <div class="k">Resource Group</div><div class="v">Un dossier logique qui contient toutes tes ressources Azure. Chez toi : <code>rg-abtesting-66045</code>. Le supprimer supprime tout d'un coup.</div>
+    <div class="k">ACR<br>(Container Registry)</div><div class="v">Ton dépôt d'images Docker privé, chez Azure : <code>acrabtesting66045</code>. C'est le « Docker Hub » perso du projet.</div>
     <div class="k">App Service</div><div class="v">Un serveur web géré par Azure. Tu lui dis « fais tourner cette image Docker », il s'occupe du reste (HTTPS, nom de domaine, redémarrages).</div>
     <div class="k">App Service Plan</div><div class="v">La machine (et le tarif) sur laquelle tournent tes App Services. Tu en as <b>un seul, en B1</b>, partagé par les deux applis — pour ne pas payer deux fois.</div>
     <div class="k">Service Principal</div><div class="v">Un compte robot Azure. Le pipeline ne peut pas taper un mot de passe dans un navigateur, donc il s'authentifie avec ça.</div>
-    <div class="k">Identité managée</div><div class="v">Un badge que porte l'App Service lui-même, sans mot de passe, pour aller chercher son image dans l'ACR.</div>
+    <div class="k">Identité managée</div><div class="v">Un badge que porte l'App Service lui-même, sans mot de passe, pour aller chercher son image dans l'ACR. Chez toi : <code>id-abtesting</code>.</div>
   </div>
 
   <div class="say">
@@ -345,103 +354,92 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
 
 <section id="e4">
   <div class="rail"></div>
-  <p class="eyebrow">Échelle 4 — le code</p>
+  <p class="eyebrow">Échelle 4 — ton code, ligne par ligne</p>
   <h2>Les 6 fichiers à connaître, classés par risque</h2>
   <div class="prose">
-  <p class="lede">Le prof peut pointer <strong>n'importe quelle ligne</strong> d'un fichier que tu as écrit et te demander de l'expliquer. Voici ces fichiers, du plus probable au moins probable. Si tu n'as le temps que pour trois, fais les trois premiers.</p>
+  <p class="lede">Le prof peut pointer <strong>n'importe quelle ligne</strong> d'un fichier que tu as écrit et te demander de l'expliquer. Voici ces fichiers, du plus probable au moins probable, avec <strong>ton code réel</strong>. Si tu n'as le temps que pour trois, fais les trois premiers.</p>
 
   <div class="note">
-    <b>La règle de tri.</b> Tout ce qui est dans <code>spring-boot/src/</code>, <code>django/demo/</code>, <code>manage.py</code>, <code>pom.xml</code> = code de l'école, tu n'as pas à le défendre (« c'est le code applicatif fourni, je n'y ai pas touché »). Tout le reste — Dockerfile, compose, nginx.conf, .gitlab-ci.yml, terraform — c'est toi.
+    <b>La règle de tri.</b> Tout ce qui est dans <code>spring-boot/src/</code>, <code>django/demo/</code>, <code>manage.py</code>, <code>pom.xml</code>, <code>mvnw</code> = code de l'école, tu n'as pas à le défendre (« c'est le code applicatif fourni, je n'y ai pas touché »). Tout le reste — Dockerfile, compose, nginx.conf, .gitlab-ci.yml, terraform — c'est toi.
   </div>
   </div>
 
   <!-- ============ 1 ============ -->
   <div class="file">
     <div class="file-h"><span class="rank">1</span><span class="fname">.gitlab-ci.yml</span></div>
-    <p class="why">À la racine du dépôt · couvre 2 des 6 parties (P3 et P5) · c'est LE fichier DevOps du projet</p>
+    <p class="why">À la racine · couvre 2 des 6 parties (P3 et P5) · c'est LE fichier DevOps du projet</p>
   </div>
   <div class="prose">
   <p>C'est la recette que GitLab exécute automatiquement à chaque <code>git push</code>. Tout est dedans : quoi compiler, quoi tester, quoi déployer, dans quel ordre.</p>
 
-  <h4>Le squelette</h4>
-  <pre><code>stages:
-  - build      # P3 — compiler / installer les dépendances
-  - test       # P3 — lancer les tests unitaires
-  - deploy     # P5 — fabriquer les images et les pousser sur l'ACR
-  - update     # P5 — redémarrer les App Services Azure</code></pre>
+  <h4>Ta structure : 4 stages, 5 jobs</h4>
+  <div class="tw">
+  <table>
+    <tr><th>Stage</th><th>Jobs</th><th>Rôle</th></tr>
+    <tr><td><code>build</code></td><td><code>build-spring</code></td><td>Compilation de Spring Boot</td></tr>
+    <tr><td><code>test</code></td><td><code>test-spring</code> · <code>test-django</code></td><td>Tests unitaires des deux applications</td></tr>
+    <tr><td><code>deploy</code></td><td><code>push-images</code></td><td>Construction des images et envoi vers l'ACR</td></tr>
+    <tr><td><code>update</code></td><td><code>update-apps</code></td><td>Redémarrage des App Services</td></tr>
+  </table>
+  </div>
 
   <p>Trois mots à ne jamais confondre :</p>
   <div class="lines">
     <div class="k">pipeline</div><div class="v">L'exécution complète, déclenchée par un push. Un pipeline contient des stages.</div>
-    <div class="k">stage</div><div class="v">Une étape. Les stages s'exécutent <b>l'un après l'autre</b>, dans l'ordre déclaré. Si un stage échoue, les suivants sont annulés.</div>
-    <div class="k">job</div><div class="v">Une tâche concrète dans un stage. Les jobs d'un même stage peuvent tourner <b>en parallèle</b> (s'il y a assez de runners).</div>
+    <div class="k">stage</div><div class="v">Une étape. Les stages s'exécutent <b>l'un après l'autre</b>. Si un stage échoue, les suivants sont annulés.</div>
+    <div class="k">job</div><div class="v">Une tâche concrète dans un stage. Les jobs d'un même stage peuvent tourner <b>en parallèle</b> — mais chez toi il n'y a qu'un seul runner, donc ils s'enchaînent.</div>
   </div>
 
-  <h4>Les jobs de compilation et de test (P3)</h4>
-  <pre><code>build-spring:
-  stage: build
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - cd spring-boot
-    - mvn compile
-
-build-django:
-  stage: build
-  image: python:3.12-alpine
-  script:
-    - cd django
-    - pip install --no-cache-dir -r requirements.txt
-
-test-spring:
-  stage: test
-  image: maven:3.9-eclipse-temurin-21
-  script:
-    - cd spring-boot
-    - mvn test
-
-test-django:
-  stage: test
-  image: python:3.12-alpine
-  script:
-    - cd django
-    - pip install --no-cache-dir -r requirements.txt
-    - python manage.py test</code></pre>
-
-  <div class="lines">
-    <div class="k">build-spring:</div><div class="v">Le nom du job. C'est toi qui le choisis, il s'affiche tel quel dans l'interface GitLab.</div>
-    <div class="k">stage: build</div><div class="v">À quelle étape ce job appartient.</div>
-    <div class="k">image: maven:3.9-<br>eclipse-temurin-21</div><div class="v">L'image Docker dans laquelle le job va tourner. Celle-ci contient Maven 3.9 et le JDK 21. <b>Chaque job démarre dans un conteneur neuf</b> — c'est ça qui rend le résultat reproductible.</div>
-    <div class="k">script:</div><div class="v">Les commandes à exécuter dans ce conteneur, dans l'ordre. Si l'une renvoie une erreur, le job échoue.</div>
-    <div class="k">- cd spring-boot</div><div class="v">Le runner clone tout le dépôt à la racine du conteneur ; il faut donc entrer dans le bon dossier.</div>
-    <div class="k">- mvn test</div><div class="v">Lance les tests unitaires Java. <code>python manage.py test</code> fait la même chose côté Django.</div>
-  </div>
-
-  <h4>Les jobs de déploiement (P5)</h4>
-  <pre><code>push-spring:
-  stage: deploy
-  image: docker:latest
-  script:
-    - docker login "$ACR_NAME.azurecr.io" -u "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET"
-    - docker build -t "$ACR_NAME.azurecr.io/spring-boot:latest" ./spring-boot
-    - docker push "$ACR_NAME.azurecr.io/spring-boot:latest"
-
-update-spring:
-  stage: update
-  image: mcr.microsoft.com/azure-cli:latest
-  script:
-    - az login --service-principal -u "$ARM_CLIENT_ID" -p "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID"
-    - az webapp restart --name app-spring-66045 --resource-group rg-abtesting-66045</code></pre>
-
-  <div class="lines">
-    <div class="k">docker login …</div><div class="v">S'authentifier auprès de ton registre Azure, avec les identifiants du compte robot (Service Principal).</div>
-    <div class="k">docker build -t <br>"$ACR_NAME.azurecr.io/<br>spring-boot:latest"</div><div class="v">Fabriquer l'image <b>en la nommant directement avec l'adresse du registre</b>. C'est le nom de l'image qui dit à Docker où la pousser — d'où l'importance que le <code>build -t</code> et le <code>push</code> utilisent exactement la même chaîne.</div>
-    <div class="k">az webapp restart</div><div class="v">Redémarrer l'App Service. Un App Service va chercher son image <b>uniquement au démarrage</b> : sans ce redémarrage, il continuerait à faire tourner l'ancienne version indéfiniment.</div>
-    <div class="k">$ACR_NAME, $ARM_*</div><div class="v">Des variables définies dans GitLab (Settings → CI/CD → Variables), pas dans le fichier. <b>Aucun secret n'est écrit dans le dépôt.</b></div>
-  </div>
+  <h4>⭐ Pourquoi 5 jobs et pas 8 — la question qui te distingue</h4>
+  <p>La consigne laisse le nombre de jobs libre. Tu as appliqué une règle : <strong>aucun job ne doit refaire le travail d'un autre</strong>. C'est un raisonnement, pas un hasard, et c'est exactement ce qu'un correcteur cherche.</p>
 
   <div class="say">
-    <span class="tag">Si le prof demande « pourquoi update après deploy ? »</span>
-    <p>« Parce que si je redémarrais les App Services <em>avant</em> d'avoir poussé la nouvelle image, ils re-téléchargeraient l'ancienne. L'ordre des stages garantit que <code>update</code> ne tourne que si <code>deploy</code> a réussi. »</p>
+    <span class="tag">Les trois justifications, à savoir dérouler</span>
+    <p>« <b>Pas de <code>build-django</code></b> : Java se compile, Python s'interprète. Un job qui se contenterait d'installer les dépendances Django ferait doublon avec <code>test-django</code>, qui doit de toute façon les installer pour lancer les tests. »</p>
+    <p>« <b><code>build-spring</code> et <code>test-spring</code> restent séparés</b> parce que le premier transmet <code>spring-boot/target/</code> au second via <code>artifacts</code>. Sans cet échange, les deux compileraient les mêmes sources — <code>mvn test</code> passe par la phase <code>compile</code> du cycle de vie Maven. Avec l'artifact, le job de test affiche <em>Nothing to compile, all classes are up to date</em>. »</p>
+    <p>« <b>Un seul job pour <code>deploy</code> et pour <code>update</code></b> : le dépôt n'a qu'un runner, donc deux jobs dans un même stage ne tourneraient pas en parallèle de toute façon, et referaient chacun le même <code>docker login</code> ou le même <code>az login</code>. »</p>
+  </div>
+
+  <h4>⭐ <code>artifacts</code> et <code>cache</code> — la partie technique la plus fine de ton projet</h4>
+  <p>Le point de départ : <strong>chaque job démarre dans un conteneur neuf</strong>. C'est ce qui rend les résultats reproductibles, mais ça veut dire que par défaut, chaque job repart de zéro — il recompile et retélécharge tout. Tu as deux mécanismes contre ça, et il faut savoir les distinguer :</p>
+
+  <div class="lines">
+    <div class="k">artifacts</div><div class="v">Transmet des fichiers <b>d'un job au suivant, dans le même pipeline</b>. Chez toi : <code>spring-boot/target/</code> de <code>build-spring</code> vers <code>test-spring</code>. C'est un passage de relais.</div>
+    <div class="k">cache</div><div class="v">Conserve des fichiers <b>entre les jobs ET entre les exécutions successives du pipeline</b>. Chez toi : le dépôt Maven local (<code>.m2/repository/</code>) et le cache de pip (<code>.cache/pip/</code>). Les dépendances ne sont téléchargées qu'une fois, pas à chaque push.</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Le détail que presque personne ne sait expliquer — apprends-le</span>
+    <p class="q">« Pourquoi les variables <code>MAVEN_REPO</code> et <code>PIP_CACHE_DIR</code> en haut de ton fichier ? »</p>
+    <p>« Parce que <strong>GitLab ne met en cache que ce qui se trouve sous <code>$CI_PROJECT_DIR</code></strong>, le dossier du projet cloné. Or Maven et pip écrivent par défaut dans le répertoire personnel de l'utilisateur, en dehors. Ces deux variables redirigent leurs caches à l'intérieur du projet — sans elles, ma directive <code>cache:</code> n'aurait strictement aucun effet. »</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">La question piège qui va avec</span>
+    <p class="q">« Tu mets du cache dans le pipeline, mais <code>--no-cache-dir</code> dans tes Dockerfile. Tu te contredis ? »</p>
+    <p>Non, et c'est un très bon signe que tu saches répondre : « les objectifs sont inverses. Dans le pipeline, je veux <strong>garder</strong> les dépendances entre deux exécutions pour gagner du temps. Dans l'image Docker, je veux au contraire <strong>ne pas embarquer</strong> le cache de pip, qui ne servirait plus à rien une fois l'image construite et ne ferait que l'alourdir. »</p>
+  </div>
+
+  <h4>Le déclenchement conditionnel</h4>
+  <p><code>build</code> et <code>test</code> tournent sur toutes les branches. <code>deploy</code> et <code>update</code> sont limités à <code>main</code> :</p>
+  <pre><code>rules:
+  - if: '$CI_COMMIT_BRANCH == "main"'</code></pre>
+  <p>Traduction : « n'inclus ce job dans le pipeline que si la branche du push s'appelle <code>main</code> ». Conséquence concrète : un commit sur une branche de travail est <strong>vérifié</strong> (compilé, testé) mais ne <strong>redéploie rien</strong> sur Azure. C'est exactement ce qu'on attend d'un pipeline sérieux.</p>
+  <p><code>$CI_COMMIT_BRANCH</code> est une variable que GitLab injecte automatiquement dans chaque job. Les autres à connaître : <code>$CI_COMMIT_TAG</code> (le nom du tag, vide si ce n'est pas un push de tag), <code>$CI_COMMIT_SHA</code> (le hash), <code>$CI_PROJECT_DIR</code> (le dossier du dépôt cloné).</p>
+
+  <h4>Les 4 variables secrètes</h4>
+  <p>Dans GitLab → <code>Settings</code> → <code>CI/CD</code> → <code>Variables</code>, en <b>Masked</b> pour les secrets :</p>
+  <div class="lines">
+    <div class="k">ACR_NAME</div><div class="v">Le nom de ton registre, sans le <code>.azurecr.io</code>. Pas secret, c'est juste un nom.</div>
+    <div class="k">ARM_CLIENT_ID</div><div class="v">L'identifiant du Service Principal (le compte robot Azure).</div>
+    <div class="k">ARM_CLIENT_SECRET</div><div class="v">Son mot de passe. Masqué.</div>
+    <div class="k">ARM_TENANT_ID</div><div class="v">L'identifiant de ton annuaire Azure, nécessaire au <code>az login</code>.</div>
+  </div>
+  <p>Le préfixe <code>ARM_</code> n'est pas décoratif : c'est la convention que le provider Terraform <code>azurerm</code> reconnaît automatiquement. Si tu voulais un jour faire tourner Terraform dans le pipeline, ces variables seraient utilisées telles quelles, sans configuration supplémentaire.</p>
+
+  <div class="say">
+    <span class="tag">Le point sécurité, à placer</span>
+    <p>« Aucun secret n'est écrit dans le dépôt. Le pipeline ne connaît que des noms de variables ; les valeurs vivent dans l'interface GitLab, en masqué, et sont injectées dans l'environnement du job au moment de l'exécution. Si le dépôt fuite, les identifiants Azure ne fuitent pas avec. »</p>
   </div>
 
   <h4>Le runner — la question qui tombe presque à coup sûr</h4>
@@ -451,18 +449,18 @@ update-spring:
   <div class="trap">
     <span class="tag">La question à tiroir</span>
     <p class="q">« Comment un job qui tourne dans un conteneur peut-il lui-même faire <code>docker build</code> ? Il y a Docker dedans ? »</p>
-    <p>Non. À l'enregistrement du runner, tu as monté le socket Docker de la machine hôte dans le conteneur : <code>-v /var/run/docker.sock:/var/run/docker.sock</code>. Le client Docker du job envoie donc ses ordres au démon Docker <b>de ta machine</b>. L'alternative, c'est Docker-in-Docker (DinD), plus lourd à configurer. C'est la technique « accès au démon hôte » du TD 07.</p>
+    <p>Non. À l'enregistrement du runner, tu as monté le socket Docker de la machine hôte dans le conteneur : <code>-v /var/run/docker.sock:/var/run/docker.sock</code>. Le client Docker du job envoie donc ses ordres au démon Docker <b>de ta machine</b>. L'alternative, c'est Docker-in-Docker (DinD), plus lourd à configurer. C'est la technique « accès au démon hôte » du TD 07, et ton README le documente.</p>
   </div>
 
   <div class="note">
-    <b>Vérifie ce point sur ton dépôt.</b> Dans tes derniers pipelines, les jobs de déploiement s'appellent <code>push-images</code> et <code>update-apps</code> — donc les deux jobs de chaque stage ont peut-être été fusionnés en un seul depuis. Ouvre ton vrai <code>.gitlab-ci.yml</code> et compte tes jobs : c'est <b>ton</b> fichier que le prof lira, pas celui-ci.
+    <b>Le seul fichier que je n'ai pas encore lu.</b> Ton <code>.gitlab-ci.yml</code> commence par un point, donc le Finder ne l'a pas copié quand tu as poussé le projet. Tout ce qui est écrit ci-dessus vient de la description détaillée que tu en fais dans ton <code>README.md</code> — c'est fiable sur le fond, mais je n'ai pas vu la syntaxe exacte des jobs. <b>Relis le fichier toi-même au moins une fois avant demain</b>, ligne par ligne, avec cette page à côté.
   </div>
   </div>
 
   <!-- ============ 2 ============ -->
   <div class="file">
     <div class="file-h"><span class="rank">2</span><span class="fname">docker-compose.yml</span></div>
-    <p class="why">À la racine · c'est la pièce centrale : tous les autres fichiers s'y raccordent</p>
+    <p class="why">À la racine · la pièce centrale : tous les autres fichiers s'y raccordent</p>
   </div>
   <div class="prose">
   <p>Sans lui, il faudrait taper trois <code>docker run</code> avec les bons ports, le bon réseau, le bon ordre. Avec lui : <code>docker compose up --build</code>.</p>
@@ -501,9 +499,9 @@ networks:
 
   <div class="lines">
     <div class="k">services:</div><div class="v">La liste des conteneurs à lancer. Ici trois.</div>
-    <div class="k">spring-boot:</div><div class="v"><b>Le nom du service</b> — et c'est aussi le nom DNS par lequel les autres conteneurs le joignent. C'est exactement cette chaîne qu'on retrouve dans <code>nginx.conf</code>.</div>
+    <div class="k">spring-boot:</div><div class="v"><b>Le nom du service</b> — et c'est aussi le nom DNS par lequel les autres conteneurs le joignent. C'est exactement cette chaîne qu'on retrouve dans <code>nginx/nginx.conf</code>.</div>
     <div class="k">build: ./spring-boot</div><div class="v">Construis l'image à partir du Dockerfile situé dans ce dossier (au lieu de télécharger une image toute faite avec <code>image:</code>).</div>
-    <div class="k">container_name:</div><div class="v">Un nom fixe et lisible pour le conteneur, sinon Docker en invente un aléatoire.</div>
+    <div class="k">container_name:<br>app-spring-boot</div><div class="v">Un nom fixe et lisible pour le conteneur, sinon Docker en invente un aléatoire. C'est ce nom que tu vois dans <code>docker compose ps</code>.</div>
     <div class="k">ports:<br>- "8080:8080"</div><div class="v"><b>gauche = ta machine, droite = le conteneur.</b> C'est cette ligne — et elle seule — qui rend l'appli joignable depuis ton navigateur.</div>
     <div class="k">depends_on:</div><div class="v">Ordre de <b>démarrage</b> : Nginx démarre après les deux applis.</div>
     <div class="k">networks: ab-network<br>driver: bridge</div><div class="v">Un réseau Docker privé partagé par les trois conteneurs. C'est lui qui permet la résolution par nom de service. <code>bridge</code> est le driver par défaut : réseau virtuel isolé, l'extérieur n'entre que par les ports listés dans <code>ports:</code>.</div>
@@ -525,12 +523,15 @@ networks:
   <!-- ============ 3 ============ -->
   <div class="file">
     <div class="file-h"><span class="rank">3</span><span class="fname">nginx/nginx.conf</span></div>
-    <p class="why">Dossier <code>nginx/</code> · c'est le fichier qui <em>fait</em> l'A/B testing — 8 lignes utiles, connais-les par cœur</p>
+    <p class="why">Dossier <code>nginx/</code> · le fichier qui <em>fait</em> l'A/B testing — connais-le par cœur</p>
   </div>
   <div class="prose">
   <pre><code>events { }
 
 http {
+    # Regroupe les deux versions de l'application dans un upstream
+    # Par defaut Nginx repartit les requetes en round-robin entre les serveurs
+    # listes, ce qui donne un A/B testing 50/50.
     upstream apps-ab {
         server spring-boot:8080;
         server django:8000;
@@ -539,6 +540,10 @@ http {
     server {
         listen 80;
 
+        # Toute requete sur /test est redirigee alternativement vers
+        # la version A (Spring Boot) ou la version B (Django).
+        # Le trailing slash sur proxy_pass remplace /test par / dans l'URL
+        # transmise au backend, qui sert sa page d'accueil sur /.
         location /test {
             proxy_pass http://apps-ab/;
         }
@@ -559,15 +564,28 @@ http {
     <span class="tag">Le détail que le prof adore</span>
     <p class="q">« Pourquoi le slash à la fin de <code>proxy_pass http://apps-ab/</code> ? »</p>
     <p><strong>Avec</strong> le slash : Nginx remplace le morceau capté par le <code>location</code> (<code>/test</code>) par <code>/</code>. Le backend reçoit une requête sur <code>/</code>, sa page d'accueil : ça marche.<br>
-    <strong>Sans</strong> le slash : le chemin est transmis tel quel. Spring et Django reçoivent <code>/test</code>, qu'ils ne connaissent pas : <strong>404</strong>.</p>
+    <strong>Sans</strong> le slash : le chemin est transmis tel quel. Spring et Django reçoivent <code>/test</code>, qu'ils ne connaissent pas : <strong>404</strong>.<br>
+    Bonne nouvelle : c'est déjà écrit dans le commentaire de ton fichier. Relis-le, il te sauve.</p>
   </div>
 
   <div class="say">
     <span class="tag">Ton anecdote de debug — sors-la, elle vaut de l'or</span>
     <p>« Au début j'avais nommé l'upstream <code>apps_ab</code> avec un underscore, et je me prenais un 400 Bad Request. En cherchant, j'ai compris que Nginx met le nom de l'upstream dans l'en-tête <code>Host</code> de la requête transmise, et que Tomcat — le serveur embarqué dans Spring Boot — applique strictement la RFC, qui interdit l'underscore dans un nom d'hôte. J'ai renommé en <code>apps-ab</code> avec un tiret, et c'est passé. »</p>
+    <p>Retiens bien ce mécanisme : <strong>Nginx transmet le nom de l'upstream en <code>Host</code></strong>. C'est exactement le problème que tu as dû résoudre autrement dans <code>nginx-azure</code> — voir le fichier n°6.</p>
   </div>
 
-  <p>Le <code>nginx/Dockerfile</code> qui va avec tient en trois lignes : partir de <code>nginx:alpine</code>, copier ta conf par-dessus celle par défaut (<code>COPY nginx.conf /etc/nginx/nginx.conf</code>), déclarer <code>EXPOSE 80</code>. La consigne demandait un Dockerfile personnalisé plutôt qu'un simple montage de volume : l'image devient autonome, elle embarque sa configuration et se déploie n'importe où.</p>
+  <h4>Le <code>nginx/Dockerfile</code> qui va avec</h4>
+  <pre><code># Image officielle Nginx, version alpine pour rester leger
+FROM nginx:alpine
+LABEL author="66045"
+
+# Remplace la conf par defaut par notre conf personnalisee
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Port d'ecoute du serveur Nginx
+EXPOSE 80</code></pre>
+  <p>Trois lignes utiles. <code>/etc/nginx/nginx.conf</code> est le chemin standard de la configuration dans l'image officielle : en copiant par-dessus, tu remplaces la conf par défaut par la tienne. La consigne demandait un Dockerfile personnalisé plutôt qu'un simple montage de volume — l'image devient autonome, elle embarque sa configuration et se déploie n'importe où.</p>
+  <p>Remarque : ce Dockerfile n'a <strong>pas</strong> de <code>CMD</code>. Normal — l'image officielle <code>nginx</code> en définit déjà un, et tu en hérites.</p>
   </div>
 
   <!-- ============ 4 ============ -->
@@ -581,24 +599,37 @@ http {
   <pre><code># Etape 1 : compilation et empaquetage avec Maven
 FROM maven:3.9-eclipse-temurin-21 AS build
 WORKDIR /app
+
+# Copie du pom.xml et des sources
 COPY pom.xml .
 COPY src ./src
+
+# Empaquetage de l'application en un fichier .jar
+# Les tests seront executes dans le pipeline CI (Partie 3),
+# on les saute ici pour accelerer le build de l'image.
 RUN mvn clean package -DskipTests
 
 # Etape 2 : image finale legere avec uniquement la JRE
 FROM eclipse-temurin:21-jre-alpine
 LABEL author="66045"
 WORKDIR /app
+
+# Copie du jar depuis l'etape de build
 COPY --from=build /app/target/*.jar app.jar
+
+# Port utilise par Spring Boot
 EXPOSE 8080
+
+# Lancement de l'application
 CMD ["java", "-jar", "/app/app.jar"]</code></pre>
 
   <div class="lines">
-    <div class="k">FROM … AS build</div><div class="v">Première étape, sur une image qui contient Maven et le JDK 21. Le <code>AS build</code> lui donne un nom pour pouvoir y piocher plus tard.</div>
+    <div class="k">FROM maven:3.9-<br>eclipse-temurin-21 AS build</div><div class="v">Première étape, sur une image qui contient Maven et le JDK 21. Le <code>AS build</code> lui donne un nom pour pouvoir y piocher plus tard.</div>
     <div class="k">WORKDIR /app</div><div class="v">Le dossier de travail pour toutes les instructions suivantes (créé s'il n'existe pas). Évite de répéter <code>cd</code>.</div>
     <div class="k">COPY pom.xml .<br>COPY src ./src</div><div class="v">On copie la description des dépendances puis le code source depuis ta machine vers l'image.</div>
-    <div class="k">RUN mvn clean package<br>-DskipTests</div><div class="v">Maven compile et produit le <code>.jar</code>. On saute les tests <b>ici</b> parce qu'ils tournent déjà dans le pipeline (job <code>test-spring</code>) : les refaire allongerait le build pour rien.</div>
+    <div class="k">RUN mvn clean package<br>-DskipTests</div><div class="v">Maven compile et produit le <code>.jar</code>. On saute les tests <b>ici</b> parce qu'ils tournent déjà dans le pipeline (job <code>test-spring</code>) : les refaire allongerait le build pour rien. Ton commentaire le dit déjà.</div>
     <div class="k">FROM eclipse-temurin:<br>21-jre-alpine</div><div class="v"><b>Deuxième étape = nouvelle image, repartie de zéro.</b> Elle ne contient qu'une JRE (de quoi <em>exécuter</em> du Java, pas le compiler) sur Alpine Linux.</div>
+    <div class="k">LABEL author="66045"</div><div class="v">Une métadonnée inscrite dans l'image. Traçabilité : ton matricule comme auteur.</div>
     <div class="k">COPY --from=build<br>/app/target/*.jar app.jar</div><div class="v">On récupère uniquement le <code>.jar</code> produit à l'étape 1. Maven, le JDK et les sources restent derrière : c'est tout l'intérêt du multi-stage.</div>
     <div class="k">EXPOSE 8080</div><div class="v">Une <b>déclaration</b>, pas une action : ça documente le port utilisé. Ça n'ouvre rien.</div>
     <div class="k">CMD ["java","-jar",…]</div><div class="v">La commande lancée au démarrage du conteneur. Écrite en tableau JSON (« forme exec ») : pas de shell intermédiaire.</div>
@@ -606,29 +637,53 @@ CMD ["java", "-jar", "/app/app.jar"]</code></pre>
 
   <div class="say">
     <span class="tag">La phrase à connaître par cœur</span>
-    <p>« Le multi-stage sépare l'environnement de <strong>construction</strong> de l'environnement d'<strong>exécution</strong>. La première étape a besoin de Maven et du JDK pour produire le jar ; l'image finale n'a besoin que d'une JRE pour le lancer. Résultat : environ 200 Mo au lieu de 800, et une surface d'attaque réduite puisque les outils de build ne sont pas embarqués en production. »</p>
+    <p>« Le multi-stage sépare l'environnement de <strong>construction</strong> de l'environnement d'<strong>exécution</strong>. La première étape a besoin de Maven et du JDK pour produire le jar ; l'image finale n'a besoin que d'une JRE pour le lancer. Résultat : une image bien plus légère, et une surface d'attaque réduite puisque les outils de build ne sont pas embarqués en production. »</p>
   </div>
 
   <div class="trap">
     <span class="tag">Le test qu'il va peut-être te faire faire en direct</span>
     <p class="q">« Commente <code>EXPOSE 8080</code>, reconstruis, relance. Ça marche encore ? »</p>
     <p><strong>Oui, ça marche encore.</strong> <code>EXPOSE</code> est purement déclaratif — de la métadonnée pour les humains et les outils. Ce qui rend réellement l'appli joignable, c'est le <code>-p 8080:8080</code> du <code>docker run</code>, ou la section <code>ports:</code> du compose. Dis-le avant de taper la commande : c'est ça qu'il évalue.</p>
+    <p><b>Nuance à ajouter si tu veux marquer un point :</b> « en local <code>EXPOSE</code> ne change rien, mais sur Azure App Service il en va autrement — en l'absence de variable <code>WEBSITES_PORT</code>, App Service lit justement l'instruction <code>EXPOSE</code> de l'image pour savoir sur quel port joindre le conteneur. Donc ici elle est déclarative, là-bas elle est fonctionnelle. »</p>
   </div>
 
-  <h4>Côté Django, les trois lignes qui comptent</h4>
-  <pre><code>FROM python:3.12-alpine
+  <h4>Le Dockerfile Django</h4>
+  <pre><code># Image de base Python legere
+FROM python:3.12-alpine
+LABEL author="66045"
+
 WORKDIR /app
+
+# Copie du fichier des dependances et installation
+# --no-cache-dir evite de stocker le cache de pip dans l'image
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copie du code source de l'application
 COPY . .
-RUN python manage.py makemigrations &amp;&amp; python manage.py migrate
+
+# Creation des tables des applications Django integrees (admin, auth, sessions).
+# Pas de makemigrations ici : le projet ne definit aucun modele, et on ne genere
+# pas de fichiers de migration au moment de construire l'image.
+RUN python manage.py migrate
+
+# Port utilise par le serveur de developpement Django
 EXPOSE 8000
+
+# Lancement du serveur Django, accessible depuis l'exterieur du conteneur
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
 
   <div class="lines">
-    <div class="k">COPY requirements.txt<br>puis RUN pip install<br>puis COPY . .</div><div class="v">L'ordre n'est pas anodin : Docker met chaque instruction en cache. En installant les dépendances <b>avant</b> de copier le code, une simple modification du code ne réinvalide pas l'étape <code>pip install</code> — le rebuild est bien plus rapide.</div>
+    <div class="k">COPY requirements.txt<br>puis RUN pip install<br>puis COPY . .</div><div class="v">L'ordre n'est pas anodin : Docker met chaque instruction en cache. En installant les dépendances <b>avant</b> de copier le code, une simple modification du code ne réinvalide pas l'étape <code>pip install</code> — le rebuild est bien plus rapide. C'est du <b>layer caching</b>.</div>
     <div class="k">--no-cache-dir</div><div class="v">pip garde normalement une copie des paquets téléchargés. Inutile dans une image qu'on n'installe qu'une fois : on évite de la faire grossir.</div>
-    <div class="k">runserver <b>0.0.0.0</b>:8000</div><div class="v">Le détail crucial. Sans ça, Django n'écoute que sur <code>127.0.0.1</code>, c'est-à-dire la boucle locale <b>interne au conteneur</b> — inaccessible depuis l'extérieur, même avec le bon mapping de ports. <code>0.0.0.0</code> = « écoute sur toutes les interfaces réseau ».</div>
+    <div class="k">RUN python manage.py<br>migrate</div><div class="v">Crée les tables des applications Django intégrées (admin, auth, sessions) au moment du build, pour que la base SQLite soit déjà initialisée dans l'image.</div>
+    <div class="k">runserver <b>0.0.0.0</b>:8000</div><div class="v">Le détail crucial. Sans ça, Django n'écoute que sur <code>127.0.0.1</code>, la boucle locale <b>interne au conteneur</b> — inaccessible depuis l'extérieur, même avec le bon mapping de ports. <code>0.0.0.0</code> = « écoute sur toutes les interfaces réseau ».</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Une question probable, et tu as déjà la réponse écrite</span>
+    <p class="q">« Pourquoi <code>migrate</code> seul, sans <code>makemigrations</code> ? »</p>
+    <p>Ton commentaire répond : « le projet ne définit aucun modèle, donc il n'y a aucune migration à générer. <code>makemigrations</code> produit des fichiers de migration à partir des modèles — le faire au moment du build serait générer du code dans une image, ce qui n'a pas sa place là. <code>migrate</code> se contente d'appliquer les migrations existantes, celles des applications Django intégrées. »</p>
   </div>
 
   <div class="note">
@@ -640,30 +695,30 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
 
   <!-- ============ 5 ============ -->
   <div class="file">
-    <div class="file-h"><span class="rank">5</span><span class="fname">terraform/main.tf</span></div>
-    <p class="why">Dossier <code>terraform/</code> · la partie la plus dense · 4 fichiers, 7 ressources Azure</p>
+    <div class="file-h"><span class="rank">5</span><span class="fname">terraform/</span></div>
+    <p class="why">4 fichiers, 7 ressources Azure · la partie la plus dense</p>
   </div>
   <div class="prose">
   <p><strong>Infrastructure as Code</strong> : au lieu de cliquer dans le portail Azure pour créer un serveur, tu écris ce que tu veux dans des fichiers <code>.tf</code>, tu versionnes ces fichiers dans Git, et une commande fait exister l'infrastructure. Reproductible, relisible, et destructible d'un coup.</p>
 
   <div class="lines">
-    <div class="k">providers.tf</div><div class="v">Quel « plugin » Terraform utiliser pour parler à Azure : <code>hashicorp/azurerm</code>, version figée à <code>4.66.0</code> pour qu'une mise à jour ne casse rien. Le bloc <code>features {}</code> est obligatoire même vide.</div>
-    <div class="k">variables.tf</div><div class="v">9 paramètres avec valeurs par défaut : la région, les noms des ressources, les noms d'images. Tout ce qu'on pourrait vouloir changer sans toucher au reste.</div>
+    <div class="k">providers.tf</div><div class="v">Quel « plugin » Terraform utiliser pour parler à Azure : <code>hashicorp/azurerm</code>, version figée à <code>4.66.0</code>. Le bloc <code>features {}</code> est obligatoire même vide.</div>
+    <div class="k">variables.tf</div><div class="v">9 paramètres avec valeurs par défaut : la région, les noms des ressources, les noms d'images.</div>
     <div class="k">main.tf</div><div class="v">Les 7 ressources à créer. Le cœur.</div>
-    <div class="k">outputs.tf</div><div class="v">3 valeurs affichées à la fin de l'<code>apply</code> : l'adresse du registre et les deux URLs publiques. Pratique pour ne pas aller les chercher dans le portail.</div>
-    <div class="k">.terraform.lock.hcl</div><div class="v">Généré automatiquement, verrouille la version exacte du provider. Versionné dans Git, comme le recommande le TD 09.</div>
+    <div class="k">outputs.tf</div><div class="v">3 valeurs affichées à la fin de l'<code>apply</code> : l'adresse du registre et les deux URLs publiques.</div>
+    <div class="k">.terraform.lock.hcl</div><div class="v">Généré automatiquement, verrouille la version exacte du provider avec ses empreintes. Versionné dans Git, comme le recommande le TD 09.</div>
   </div>
 
   <h4>Les 7 ressources, et pourquoi chacune est là</h4>
   <div class="tw">
   <table>
     <tr><th>#</th><th>Ressource</th><th>Rôle</th></tr>
-    <tr><td>1</td><td><code>azurerm_resource_group</code></td><td>Le dossier qui contient tout le reste.</td></tr>
+    <tr><td>1</td><td><code>azurerm_resource_group</code></td><td>Le dossier qui contient tout le reste : <code>rg-abtesting-66045</code>.</td></tr>
     <tr><td>2</td><td><code>azurerm_user_assigned_identity</code></td><td>Le badge sans mot de passe que porteront les App Services.</td></tr>
     <tr><td>3</td><td><code>azurerm_container_registry</code></td><td>Le registre privé où le pipeline pousse les images. SKU <code>Basic</code> = le moins cher.</td></tr>
     <tr><td>4</td><td><code>azurerm_role_assignment</code></td><td>Donne le rôle <code>AcrPull</code> au badge sur ce registre. <b>Sans cette ligne, les App Services n'ont pas le droit de télécharger leur image.</b></td></tr>
     <tr><td>5</td><td><code>azurerm_service_plan</code></td><td>La machine qui héberge les deux applis. Linux, SKU <code>B1</code> : le tier le moins cher qui accepte des conteneurs personnalisés.</td></tr>
-    <tr><td>6&nbsp;·&nbsp;7</td><td>2 × <code>azurerm_linux_web_app</code></td><td>Les deux App Services, un par version, chacun configuré pour tirer son image depuis l'ACR avec le badge.</td></tr>
+    <tr><td>6&nbsp;·&nbsp;7</td><td>2 × <code>azurerm_linux_web_app</code></td><td>Les deux App Services, un par version.</td></tr>
   </table>
   </div>
 
@@ -694,26 +749,32 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
 }</code></pre>
 
   <div class="lines">
-    <div class="k">resource "type" "nom"</div><div class="v">Le type est imposé par le provider ; le second nom est <b>ton</b> étiquette interne, pour référencer la ressource ailleurs dans le code.</div>
-    <div class="k">var.spring_app_name</div><div class="v">Renvoie à la variable définie dans <code>variables.tf</code>.</div>
-    <div class="k">azurerm_resource_group<br>.rg.name</div><div class="v">Une référence à une <b>autre</b> ressource. C'est comme ça que Terraform déduit tout seul l'ordre de création : il ne peut pas créer l'App Service avant le Resource Group dont il lit le nom.</div>
-    <div class="k">site_config { … }</div><div class="v">Où trouver l'image et comment s'authentifier : par identité managée, pas par mot de passe.</div>
-    <div class="k">identity { … }</div><div class="v">Attache concrètement le badge à cet App Service.</div>
-    <div class="k">app_settings = {<br>PORT = "8080" }</div><div class="v">Une variable d'environnement passée au conteneur : elle dit à Azure sur quel port l'application écoute.</div>
+    <div class="k">resource "type" "nom"</div><div class="v">Le type est imposé par le provider ; le second nom (<code>"spring"</code>) est <b>ton</b> étiquette interne, pour référencer la ressource ailleurs dans le code.</div>
+    <div class="k">var.spring_app_name</div><div class="v">Renvoie à la variable définie dans <code>variables.tf</code>, ici <code>app-spring-66045</code>.</div>
+    <div class="k">azurerm_resource_group<br>.rg.name</div><div class="v">Une référence à une <b>autre</b> ressource. C'est comme ça que Terraform déduit tout seul l'ordre de création : il ne peut pas créer l'App Service avant le Resource Group dont il lit le nom. Ce graphe de dépendances est implicite, tu n'as rien à ordonner.</div>
+    <div class="k">container_registry_use<br>_managed_identity = true</div><div class="v">« Pour te connecter au registre, utilise ton badge, pas un mot de passe. »</div>
+    <div class="k">application_stack { }</div><div class="v">Quelle image faire tourner (<code>spring-boot:latest</code>) et depuis quel registre.</div>
+    <div class="k">identity { type =<br>"UserAssigned" }</div><div class="v">Attache concrètement le badge à cet App Service. <em>UserAssigned</em> = une identité créée séparément et réutilisable, par opposition à <em>SystemAssigned</em> qui naîtrait et mourrait avec la ressource. Ici une seule identité sert aux deux applis.</div>
+    <div class="k">app_settings = {<br>PORT = "8080" }</div><div class="v">Une variable d'environnement passée au conteneur : elle dit à Azure sur quel port l'application écoute. <code>8080</code> pour Spring, <code>8000</code> pour Django.</div>
   </div>
 
   <div class="trap">
     <span class="tag">Le piège maison</span>
     <p class="q">« Pourquoi <code>PORT</code> et pas <code>WEBSITES_PORT</code> ? »</p>
-    <p>Le TD 08 le précise noir sur blanc : Azure a changé sa gestion des conteneurs, il faut désormais une variable <code>PORT</code>. Et à défaut de variable, App Service lit l'instruction <code>EXPOSE</code> de l'image pour deviner le port — que tes deux Dockerfile fournissent. C'est cohérent des deux côtés.</p>
+    <p>Le TD 08 le précise noir sur blanc : Azure a changé sa gestion des conteneurs, il faut désormais une variable <code>PORT</code>. Et à défaut de variable, App Service lit l'instruction <code>EXPOSE</code> de l'image pour deviner le port — que tes deux Dockerfile fournissent. Les deux mécanismes se confirment l'un l'autre.</p>
   </div>
 
   <div class="trap">
     <span class="tag">Deux questions déjà annoncées par le prof</span>
     <p class="q">« Si je prends ton Terraform et que je le lance sur MON compte Azure ? »</p>
-    <p>« En théorie, rien à modifier : le provider azurerm cherche d'abord les variables d'environnement <code>ARM_*</code>, sinon la session <code>az login</code> active. Vous faites <code>az login</code>, <code>terraform init</code>, <code>terraform apply</code>. Deux réserves : si votre abonnement restreint les régions autrement, il faudra ajuster <code>-var="location=…"</code> ; et comme les noms d'ACR et d'App Service sont <strong>uniques au niveau mondial</strong>, il faudra changer ceux qui contiennent mon matricule. »</p>
+    <p>« En théorie, rien à modifier : le provider azurerm cherche d'abord les variables d'environnement <code>ARM_*</code>, sinon la session <code>az login</code> active — c'est pour ça qu'il n'y a aucun <code>subscription_id</code> écrit en dur dans mon code. Vous faites <code>az login</code>, <code>terraform init</code>, <code>terraform apply</code>. Deux réserves : si votre abonnement restreint les régions autrement, il faudra ajuster <code>-var="location=…"</code> ; et comme les noms d'ACR et d'App Service sont <strong>uniques au niveau mondial</strong>, il faudra changer ceux qui contiennent mon matricule. »</p>
     <p class="q">« Montre-moi ce que Terraform a créé. »</p>
     <p><code>terraform state list</code> pour ce que Terraform croit avoir créé, <code>az resource list -g rg-abtesting-66045 -o table</code> pour ce qui existe vraiment côté Azure, <code>terraform output</code> pour les URLs.</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Deux contraintes de nommage Azure à connaître</span>
+    <p>Regarde tes propres valeurs par défaut : <code>acrabtesting66045</code> n'a <b>ni tiret ni underscore</b>, alors que <code>app-spring-66045</code> en a. Ce n'est pas une inattention : un nom d'ACR doit faire 5 à 50 caractères <b>alphanumériques uniquement</b>. Et dans les deux cas le nom doit être unique <b>sur tout Azure</b>, d'où le matricule.</p>
   </div>
 
   <h4>Les 5 commandes Terraform</h4>
@@ -722,7 +783,7 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
     <div class="k">terraform validate</div><div class="v">Vérifie que la syntaxe tient debout, sans rien créer.</div>
     <div class="k">terraform plan</div><div class="v">Affiche ce qui <b>serait</b> créé, modifié ou détruit. Rien n'est appliqué.</div>
     <div class="k">terraform apply</div><div class="v">Fait converger le réel vers ce que décrit ton code.</div>
-    <div class="k">terraform destroy</div><div class="v">Détruit tout ce qui figure dans le state. <b>Irréversible.</b></div>
+    <div class="k">terraform destroy</div><div class="v">Détruit tout ce qui figure dans le state. <b>Irréversible — ne le lance pas avant la défense.</b></div>
   </div>
 
   <div class="note">
@@ -733,46 +794,85 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
   <!-- ============ 6 ============ -->
   <div class="file">
     <div class="file-h"><span class="rank">6</span><span class="fname">nginx-azure/nginx.conf</span></div>
-    <p class="why">Dossier <code>nginx-azure/</code> · la dernière partie, la plus courte · une seule notion à maîtriser : SNI</p>
+    <p class="why">Dossier <code>nginx-azure/</code> · <strong>ta meilleure carte</strong> — tu y as résolu un vrai problème, sache le raconter</p>
   </div>
   <div class="prose">
-  <p>Même idée que le Nginx local, mais les backends ne sont plus des conteneurs voisins : ce sont deux URLs publiques Azure, joignables uniquement en HTTPS.</p>
+  <p>Même idée que le Nginx local, mais les backends ne sont plus des conteneurs voisins : ce sont deux applications publiques sur Azure, joignables uniquement en HTTPS. Et ce changement fait apparaître un problème que le Nginx local n'avait pas.</p>
+
+  <h4>Le problème</h4>
+  <p>Souviens-toi du bug de l'underscore : <strong>quand <code>proxy_pass</code> vise un groupe <code>upstream</code>, Nginx transmet le nom du groupe dans l'en-tête <code>Host</code>.</strong> En local ce n'était qu'un souci de RFC. Sur Azure, c'est fatal : App Service héberge des milliers d'applications derrière les mêmes adresses IP, et <strong>c'est justement le <code>Host</code> qui lui dit quelle application servir</strong>. Une requête arrivant avec <code>Host: apps-ab-azure</code> ne correspond à aucune application → <strong>404</strong>.</p>
+
+  <h4>Ta solution</h4>
+  <p>Tu as séparé les deux rôles : un upstream qui ne sert qu'à <em>alterner</em>, et deux blocs <code>server</code> locaux qui servent à <em>parler à Azure avec le bon nom d'hôte</em>.</p>
 
   <pre><code>events { }
 
 http {
+    # Repartition A/B en round-robin, comme pour le nginx local (TD 05).
     upstream apps-ab-azure {
-        server app-spring-66045.azurewebsites.net:443;
-        server app-django-66045.azurewebsites.net:443;
+        server 127.0.0.1:8001;
+        server 127.0.0.1:8002;
     }
 
     server {
         listen 80;
 
         location /test {
-            proxy_pass https://apps-ab-azure/;
+            proxy_pass http://apps-ab-azure/;
+        }
+    }
+
+    # Version A : Spring Boot
+    server {
+        listen 8001;
+
+        location / {
+            proxy_pass https://app-spring-66045.azurewebsites.net/;
             proxy_ssl_server_name on;
-            proxy_ssl_name $proxy_host;
+        }
+    }
+
+    # Version B : Django
+    server {
+        listen 8002;
+
+        location / {
+            proxy_pass https://app-django-66045.azurewebsites.net/;
+            proxy_ssl_server_name on;
         }
     }
 }</code></pre>
 
+  <h4>Le trajet d'une requête, étape par étape</h4>
   <div class="lines">
-    <div class="k">…azurewebsites.net:443</div><div class="v">Port 443 = HTTPS. Un App Service ne répond pas en HTTP non chiffré.</div>
-    <div class="k">proxy_pass <b>https</b>://…</div><div class="v"><code>https</code> et non <code>http</code> : Nginx doit établir une connexion chiffrée sortante.</div>
-    <div class="k">proxy_ssl_server_name on;</div><div class="v">Active <b>SNI</b> sur cette connexion sortante. Sans ça, la connexion échoue.</div>
-    <div class="k">proxy_ssl_name $proxy_host;</div><div class="v">Le nom de domaine à annoncer dans le SNI, repris dynamiquement du serveur choisi.</div>
+    <div class="k">1</div><div class="v">Le navigateur demande <code>/test</code> sur le port 80.</div>
+    <div class="k">2</div><div class="v">Le premier bloc <code>server</code> passe la requête à l'upstream <code>apps-ab-azure</code>, qui alterne en round-robin entre <code>127.0.0.1:8001</code> et <code>127.0.0.1:8002</code>. <b>C'est ici, et seulement ici, que se joue l'A/B.</b></div>
+    <div class="k">3</div><div class="v">La requête revient dans <b>le même Nginx</b>, sur le port 8001 ou 8002 — ce sont deux blocs <code>server</code> du même fichier, pas d'autres machines.</div>
+    <div class="k">4</div><div class="v">Ce bloc fait <code>proxy_pass</code> vers <b>un nom d'hôte écrit en clair</b>. Nginx transmet donc <code>Host: app-spring-66045.azurewebsites.net</code> — le vrai nom, celui qu'Azure attend.</div>
+    <div class="k">5</div><div class="v">Azure reconnaît le <code>Host</code>, route vers la bonne application, et répond.</div>
   </div>
 
   <div class="say">
-    <span class="tag">Explique SNI comme ça</span>
-    <p>« SNI, <em>Server Name Indication</em>, c'est l'extension TLS qui permet au client d'annoncer <strong>quel domaine il veut joindre</strong> dès le début du handshake, avant que le certificat soit choisi. Azure App Service héberge des milliers d'applications derrière les mêmes adresses IP : sans SNI, il ne sait pas quel certificat présenter ni vers quelle application router, et la connexion échoue. »</p>
+    <span class="tag">La phrase à préparer — c'est ton meilleur moment de la défense</span>
+    <p>« Je ne pouvais pas mettre les deux hôtes Azure directement dans l'upstream : quand <code>proxy_pass</code> pointe vers un groupe, Nginx envoie le nom du groupe en <code>Host</code>, et Azure App Service se sert précisément du <code>Host</code> pour savoir quelle application servir — les deux requêtes seraient arrivées avec <code>Host: apps-ab-azure</code> et Azure aurait répondu 404. J'ai donc séparé les responsabilités : l'upstream ne fait que la répartition round-robin entre deux ports locaux, et chaque port correspond à un bloc <code>server</code> dont le <code>proxy_pass</code> porte le nom d'hôte Azure en clair — ce qui fait que Nginx transmet le bon <code>Host</code> et le bon SNI. »</p>
+  </div>
+
+  <div class="lines">
+    <div class="k">proxy_ssl_server_name on;</div><div class="v">Active <b>SNI</b> sur la connexion HTTPS sortante. <em>Server Name Indication</em> est l'extension TLS qui permet au client d'annoncer quel domaine il veut joindre <b>dès le début du handshake</b>, avant même que le certificat soit choisi. Azure mutualisant des milliers d'applis derrière les mêmes IP, sans SNI il ne saurait pas quel certificat présenter et la connexion échouerait.</div>
+    <div class="k">Pourquoi pas de<br>proxy_ssl_name ?</div><div class="v">Parce qu'il n'est pas nécessaire ici : par défaut Nginx envoie en SNI le nom d'hôte de la cible du <code>proxy_pass</code>, et comme tu l'as écrit en clair, c'est déjà le bon. Il aurait fallu le préciser si tu avais visé un upstream.</div>
+    <div class="k">Les slashs finaux</div><div class="v">Même règle que dans le Nginx local : <code>proxy_pass https://…net/</code> avec le slash, donc le chemin capté par le <code>location</code> est remplacé par <code>/</code>.</div>
   </div>
 
   <div class="trap">
-    <span class="tag">Si on creuse — réponds honnêtement, ça paie</span>
-    <p class="q">« Et l'en-tête <code>Host</code> ? »</p>
-    <p>C'est la limite connue de cette configuration : quand un upstream contient plusieurs serveurs, l'en-tête <code>Host</code> transmis vaut par défaut le nom de l'upstream, qu'Azure ne reconnaît pas comme une de ses applis. « En local le round-robin fonctionne pleinement ; pour une vraie production sur Azure, je gérerais le <code>Host</code> par backend, avec un <code>map</code> et un <code>split_clients</code> — ou j'utiliserais Azure Front Door, le service natif pour ce type de routage, que la consigne mentionne d'ailleurs. » Ne prétends pas que c'est parfait : reconnaître une limite en sachant comment la lever vaut mieux que bluffer.</p>
+    <span class="tag">Si on te demande d'aller plus loin</span>
+    <p class="q">« Il y avait d'autres façons de faire ? »</p>
+    <p>Oui, deux, et le dire montre de la hauteur : « j'aurais pu utiliser <code>split_clients</code> avec une <code>map</code> pour choisir le backend et poser le <code>Host</code> correspondant, ce qui aurait évité le double saut interne. Et côté Azure, le service natif pour ce type de routage c'est <strong>Azure Front Door</strong>, que la consigne mentionne d'ailleurs en note. J'ai choisi la solution qui reste dans le périmètre de Nginx vu au TD 05. »</p>
+  </div>
+
+  <p>Le <code>nginx-azure/Dockerfile</code> est identique à celui de la partie 2 : <code>FROM nginx:alpine</code>, le <code>LABEL</code>, la copie de la conf, <code>EXPOSE 80</code>. Toute la différence entre les deux parties est dans le <code>nginx.conf</code>.</p>
+
+  <div class="note">
+    <b>Ce conteneur n'est pas dans le <code>docker-compose.yml</code>, et c'est volontaire.</b> Le compose orchestre les services <em>locaux</em> de développement. Celui-ci route vers des URLs Internet : il se construit et se lance seul (<code>docker build -t nginx-azure ./nginx-azure</code> puis <code>docker run -d --rm -p 8090:80 nginx-azure</code>), c'est un contexte différent.
   </div>
   </div>
 </section>
@@ -782,22 +882,23 @@ http {
   <p class="eyebrow">Échelle 5 — le jour J</p>
   <h2>Ce qu'on va te demander de faire, pas juste de dire</h2>
   <div class="prose">
-  <p class="lede">La défense n'est pas un oral de récitation : le prof ouvre ton dépôt, pointe une ligne, et te demande souvent de <strong>modifier quelque chose en direct</strong>. Voici les gestes types.</p>
+  <p class="lede">La défense n'est pas un oral de récitation : le prof ouvre ton dépôt, pointe une ligne, et te demande souvent de <strong>modifier quelque chose en direct</strong>. Voici les gestes types, avec les fichiers exacts à toucher <em>dans ton dépôt</em>.</p>
 
   <h4>1 · Changer un port</h4>
-  <p>Trois fichiers, toujours les mêmes : le <code>Dockerfile</code> de l'appli (<code>CMD</code> + <code>EXPOSE</code>), le <code>docker-compose.yml</code> (<code>ports:</code>), le <code>nginx/nginx.conf</code> (la ligne <code>server …:port;</code> de l'upstream). Puis <code>docker compose up --build</code> et tu testes <code>/test</code>.</p>
+  <p>Trois fichiers, toujours les mêmes. Pour Django 8000 → 8050 : <code>django/Dockerfile</code> (le <code>CMD … runserver 0.0.0.0:8050</code> <b>et</b> l'<code>EXPOSE 8050</code>), <code>docker-compose.yml</code> (la ligne <code>ports:</code>), <code>nginx/nginx.conf</code> (<code>server django:8050;</code>). Puis <code>docker compose up --build</code> et tu testes <code>/test</code>.</p>
+  <p>Si on te pousse : <code>terraform/main.tf</code> aussi, la ligne <code>PORT = "8000"</code> de l'App Service Django — sinon Azure chercherait l'appli sur le mauvais port.</p>
 
   <h4>2 · Commenter <code>EXPOSE</code> et prouver que ça marche encore</h4>
-  <p>Annonce le résultat <em>avant</em> de lancer : « ça va continuer de fonctionner, parce qu'<code>EXPOSE</code> ne fait que documenter ». Puis rebuild, relance, montre.</p>
+  <p>Annonce le résultat <em>avant</em> de lancer : « ça va continuer de fonctionner, parce qu'<code>EXPOSE</code> ne fait que documenter ». Puis rebuild, relance, montre. Et ajoute la nuance Azure (voir fichier n°4).</p>
 
   <h4>3 · Enlever <code>depends_on</code> et expliquer ce que ça change</h4>
   <p>Les services démarrent en parallèle ; Nginx peut se lancer avant les applis et échouer sur ses premières requêtes. Ça ne rend pas le projet cassé, ça le rend imprévisible.</p>
 
   <h4>4 · Ajouter une variable ou une condition au pipeline</h4>
-  <p>Deux formes à savoir écrire : un bloc <code>variables:</code> en haut du fichier (ou dans un job), et une règle <code>rules: - if: '$CI_COMMIT_BRANCH == "main"'</code> pour qu'un job ne tourne que sur certaines branches. Même logique avec <code>$CI_COMMIT_TAG</code> pour ne réagir qu'aux tags.</p>
+  <p>Tu as déjà les deux formes dans ton fichier : un bloc <code>variables:</code> en haut (c'est là que vivent <code>MAVEN_REPO</code> et <code>PIP_CACHE_DIR</code>) et une <code>rules: - if:</code> sur tes stages <code>deploy</code> et <code>update</code>. Montre-les plutôt que d'improviser. Pour ne réagir qu'aux tags : <code>if: '$CI_COMMIT_TAG'</code>.</p>
 
   <h4>5 · Renommer les images (par exemple ajouter un suffixe)</h4>
-  <p>Le nom d'une image apparaît là où on la construit et là où on l'utilise : dans le <code>.gitlab-ci.yml</code> (<code>docker build -t</code> <b>et</b> <code>docker push</code>, les deux doivent rester identiques) et dans <code>terraform/variables.tf</code> (<code>spring_image</code>, <code>django_image</code>). Change les deux côtés ou l'App Service cherchera une image qui n'existe pas.</p>
+  <p>Le nom d'une image apparaît à deux endroits, et il faut changer les deux : dans <code>.gitlab-ci.yml</code> (job <code>push-images</code> — le <code>docker build -t</code> <b>et</b> le <code>docker push</code> doivent rester identiques) et dans <code>terraform/variables.tf</code> (<code>spring_image</code>, <code>django_image</code>). Sinon l'App Service ira chercher une image qui n'existe pas.</p>
 
   <hr>
 
@@ -808,10 +909,12 @@ http {
     <div class="k">registre (registry)</div><div class="v">Le dépôt où l'on stocke et partage des images. Docker Hub en public, ton ACR en privé.</div>
     <div class="k">reverse proxy</div><div class="v">Un serveur placé <b>devant</b> d'autres serveurs : il reçoit les requêtes des clients et les redistribue. Ici, Nginx.</div>
     <div class="k">round-robin</div><div class="v">Répartition à tour de rôle, chacun son tour, sans mémoire.</div>
-    <div class="k">CI / CD</div><div class="v">Intégration continue (on compile et teste automatiquement à chaque modification) / livraison continue (on déploie automatiquement dans la foulée).</div>
+    <div class="k">CI / CD</div><div class="v">Intégration continue (compiler et tester automatiquement à chaque modification) / livraison continue (déployer automatiquement dans la foulée).</div>
     <div class="k">runner</div><div class="v">Le programme qui exécute réellement les jobs du pipeline. Chez toi : un conteneur Docker sur ta machine.</div>
+    <div class="k">artifact</div><div class="v">Un fichier produit par un job et transmis au job suivant du même pipeline.</div>
     <div class="k">Infrastructure as Code</div><div class="v">Décrire ses serveurs dans des fichiers versionnés plutôt que de cliquer dans une interface.</div>
     <div class="k">idempotent</div><div class="v">Se dit d'une opération qu'on peut relancer sans changer le résultat. <code>terraform apply</code> deux fois de suite : la deuxième ne fait rien.</div>
+    <div class="k">SNI</div><div class="v">L'extension TLS qui permet d'annoncer le domaine visé dès le handshake, pour que le serveur présente le bon certificat.</div>
   </div>
 
   <hr>
@@ -820,7 +923,7 @@ http {
   <p>Ça peut arriver, et ce n'est pas grave <em>si tu sais dire pourquoi</em>. Un job GitLab qui reste en <strong>Pending</strong> avec la mention <em>stuck</em> ne signifie pas que ton code est cassé : ça veut dire qu'<strong>aucun runner n'est en ligne</strong> pour le prendre. Et ton runner, c'est un conteneur Docker sur ta machine — s'il n'est pas démarré, personne n'exécute rien.</p>
   <div class="say">
     <span class="tag">La réponse, si la question tombe</span>
-    <p>« Ce job est en attente, pas en échec : mon runner est un conteneur Docker enregistré sur ma machine, et il n'était pas démarré. Dès qu'il repasse en ligne, GitLab lui redonne le job. Le pipeline vert sur le tag <code>nginx-azure</code> est passé sur ce même commit. »</p>
+    <p>« Ce job est en attente, pas en échec : mon runner est un conteneur Docker enregistré sur ma machine, et il n'était pas démarré. Dès qu'il repasse en ligne, GitLab lui redonne le job. Le pipeline vert sur le tag <code>nginx-azure</code> est passé sur ce même commit, et les jobs <code>push-images</code> et <code>update-apps</code> y sont passés au vert — c'est bien la preuve que la chaîne complète fonctionne. »</p>
   </div>
 
   <hr>
@@ -833,7 +936,9 @@ http {
   </ol>
 
   <div class="note">
-    <b>Pour aller plus loin,</b> le dossier <code>PREPA/</code> contient le détail complet, partie par partie : <code>02-architecture.md</code> pour les schémas, <code>03</code> à <code>08</code> pour chaque partie du projet ligne par ligne, et surtout <code>XX-questions-defense.md</code> — les 13 questions annoncées par le prof, avec les réponses et les commandes exactes. Si tu ne lis qu'une chose de plus après cette page, c'est celle-là.
+    <b>Deux choses à faire avant de fermer cette page.</b><br>
+    <b>1.</b> Ouvre ton <code>.gitlab-ci.yml</code> et relis-le une fois, ligne par ligne, avec le fichier n°1 à côté — c'est le seul de tes fichiers que je n'ai pas pu lire.<br>
+    <b>2.</b> Relis ton propre <code>README.md</code>. Il est excellent, et il contient déjà la moitié des réponses de cette page — le prof l'a probablement lu avant de te recevoir.
   </div>
   </div>
 </section>
@@ -841,6 +946,7 @@ http {
 </main>
 
 <footer>
-  Fiche de révision — projet A/B testing 4DOP1DR, matricule 66045, dépôt à l'état <span class="mono">f7fa4a6</span>.
-  Le code cité provient des fiches <span class="mono">PREPA/</span> ; en cas de doute, c'est toujours ton dépôt qui fait foi.
+  Fiche de révision — projet A/B testing 4DOP1DR, Rachid Najja, matricule 66045.
+  Cette version est alignée sur le code réellement présent dans le dépôt ; en cas de contradiction
+  avec les fiches <span class="mono">PREPA/*.md</span>, c'est cette page qui fait foi.
 </footer>
