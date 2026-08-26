@@ -1,0 +1,846 @@
+<title>A/B en cinq échelles</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@500;600;700&family=IBM+Plex+Serif:ital,wght@0,400;0,600;1,400&display=swap">
+<style>
+:root{
+  --paper:#EDEFF1; --card:#FFFFFF; --card2:#F5F7F9;
+  --ink:#12181D; --ink2:#4A565F; --rule:#D5DBE0;
+  --a:#175E86; --a-soft:rgba(23,94,134,.10);
+  --b:#A4491B; --b-soft:rgba(164,73,27,.10);
+  --ok:#2C6A45; --ok-soft:rgba(44,106,69,.10);
+  --warn:#8E2F2F; --warn-soft:rgba(142,47,47,.08);
+  --code:#F2F5F7; --codeink:#1B2830;
+  --shadow:0 1px 2px rgba(16,24,32,.06), 0 8px 24px -18px rgba(16,24,32,.35);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#0F1317; --card:#161B21; --card2:#1B2129;
+    --ink:#E3E8EC; --ink2:#94A1AB; --rule:#28313A;
+    --a:#6FB2DC; --a-soft:rgba(111,178,220,.14);
+    --b:#E4926A; --b-soft:rgba(228,146,106,.14);
+    --ok:#6BC38F; --ok-soft:rgba(107,195,143,.13);
+    --warn:#E58484; --warn-soft:rgba(229,132,132,.12);
+    --code:#0B1015; --codeink:#D3DDE4;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 26px -20px rgba(0,0,0,.9);
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#0F1317; --card:#161B21; --card2:#1B2129;
+  --ink:#E3E8EC; --ink2:#94A1AB; --rule:#28313A;
+  --a:#6FB2DC; --a-soft:rgba(111,178,220,.14);
+  --b:#E4926A; --b-soft:rgba(228,146,106,.14);
+  --ok:#6BC38F; --ok-soft:rgba(107,195,143,.13);
+  --warn:#E58484; --warn-soft:rgba(229,132,132,.12);
+  --code:#0B1015; --codeink:#D3DDE4;
+  --shadow:0 1px 2px rgba(0,0,0,.5), 0 10px 26px -20px rgba(0,0,0,.9);
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Serif",Georgia,serif; font-size:17px; line-height:1.65;
+  -webkit-text-size-adjust:100%;
+}
+h1,h2,h3,h4,.sans{font-family:"IBM Plex Sans",system-ui,-apple-system,sans-serif}
+code,pre,.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace}
+
+/* ---------- header ---------- */
+header.top{
+  position:sticky; top:0; z-index:50; background:var(--paper);
+  border-bottom:1px solid var(--rule);
+}
+.top-in{max-width:960px;margin:0 auto;padding:12px 20px 0}
+.brand{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+.brand h1{font-size:17px;font-weight:700;letter-spacing:-.01em;margin:0}
+.brand .sub{font-family:"IBM Plex Mono",monospace;font-size:11.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--ink2)}
+nav.levels{display:flex;gap:6px;overflow-x:auto;padding:10px 0 9px;scrollbar-width:none}
+nav.levels::-webkit-scrollbar{display:none}
+nav.levels a{
+  flex:none;font-family:"IBM Plex Sans",sans-serif;font-size:12.5px;font-weight:600;
+  color:var(--ink2);text-decoration:none;border:1px solid var(--rule);border-radius:999px;
+  padding:5px 12px;background:var(--card);white-space:nowrap;
+}
+nav.levels a:hover,nav.levels a:focus-visible{color:var(--a);border-color:var(--a)}
+nav.levels a b{color:var(--ink);font-weight:700}
+
+/* ---------- layout ---------- */
+main{max-width:960px;margin:0 auto;padding:0 20px 90px}
+.prose{max-width:68ch}
+section{padding-top:34px}
+.rail{height:6px;border-radius:3px;margin-bottom:18px;
+  background:repeating-linear-gradient(90deg,var(--a) 0 26px,var(--b) 26px 52px);opacity:.85}
+.eyebrow{font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:500;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--ink2);margin:0 0 6px}
+h2{font-size:29px;line-height:1.15;letter-spacing:-.02em;margin:0 0 6px;text-wrap:balance}
+h3{font-size:20px;letter-spacing:-.01em;margin:34px 0 8px;text-wrap:balance}
+h4{font-size:15px;margin:22px 0 6px;letter-spacing:-.005em}
+.lede{font-size:18.5px;color:var(--ink2);margin:0 0 6px;max-width:62ch}
+p{margin:14px 0}
+ul,ol{max-width:66ch;padding-left:22px;margin:14px 0}
+li{margin:7px 0}
+strong{font-weight:600}
+a{color:var(--a)}
+hr{border:0;border-top:1px solid var(--rule);margin:34px 0}
+
+/* ---------- blocks ---------- */
+.card{background:var(--card);border:1px solid var(--rule);border-radius:10px;padding:18px 20px;margin:20px 0;box-shadow:var(--shadow)}
+.card > :first-child{margin-top:0}
+.card > :last-child{margin-bottom:0}
+
+.say{border-left:3px solid var(--a);background:var(--a-soft);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0}
+.say .tag{display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--a);font-weight:600;margin-bottom:6px}
+.say p{margin:0;font-style:italic}
+.say p + p{margin-top:10px}
+
+.trap{border-left:3px solid var(--warn);background:var(--warn-soft);border-radius:0 8px 8px 0;padding:14px 18px;margin:18px 0}
+.trap .tag{display:block;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.13em;
+  text-transform:uppercase;color:var(--warn);font-weight:600;margin-bottom:6px}
+.trap p{margin:8px 0 0}
+.trap p:first-of-type{margin-top:0}
+.trap .q{font-weight:600;font-style:normal}
+
+.note{border:1px dashed var(--rule);border-radius:8px;padding:13px 16px;margin:18px 0;background:var(--card2);font-size:15.5px;color:var(--ink2)}
+.note b{color:var(--ink)}
+
+pre{background:var(--code);color:var(--codeink);border:1px solid var(--rule);border-radius:8px;
+  padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.6;margin:14px 0}
+pre code{font-size:inherit}
+p code,li code,td code,.lines code{background:var(--code);border:1px solid var(--rule);border-radius:4px;
+  padding:.08em .34em;font-size:.86em;color:var(--codeink);white-space:nowrap}
+
+/* line-by-line grid */
+.lines{display:grid;grid-template-columns:minmax(0,32%) minmax(0,1fr);gap:1px;background:var(--rule);
+  border:1px solid var(--rule);border-radius:8px;overflow:hidden;margin:16px 0;font-size:15px}
+.lines > div{background:var(--card);padding:11px 14px}
+.lines .k{font-family:"IBM Plex Mono",monospace;font-size:12.5px;color:var(--a);word-break:break-word;line-height:1.5}
+@media (max-width:620px){
+  .lines{grid-template-columns:1fr}
+  .lines .k{padding-bottom:2px}
+  .lines .v{padding-top:4px}
+}
+
+/* tables */
+.tw{overflow-x:auto;margin:16px 0;border:1px solid var(--rule);border-radius:8px;background:var(--card)}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{text-align:left;padding:10px 14px;border-bottom:1px solid var(--rule);vertical-align:top}
+th{font-family:"IBM Plex Sans",sans-serif;font-size:12px;text-transform:uppercase;letter-spacing:.07em;color:var(--ink2);font-weight:600;white-space:nowrap}
+tr:last-child td{border-bottom:0}
+
+/* file card header */
+.file{margin:26px 0 0}
+.file-h{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:2px}
+.rank{font-family:"IBM Plex Mono",monospace;font-size:12px;font-weight:600;color:var(--paper);
+  background:var(--ink);border-radius:5px;padding:3px 8px;letter-spacing:.04em}
+.fname{font-family:"IBM Plex Mono",monospace;font-size:16.5px;font-weight:600;color:var(--ink);word-break:break-all}
+.why{font-family:"IBM Plex Sans",sans-serif;font-size:13px;color:var(--ink2);margin:0 0 14px}
+
+/* diagrams */
+.diag{background:var(--card2);border:1px solid var(--rule);border-radius:10px;padding:20px 18px;margin:20px 0;
+  display:flex;flex-direction:column;align-items:center;gap:0}
+.node{background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:10px 14px;
+  font-family:"IBM Plex Sans",sans-serif;font-size:14px;font-weight:600;text-align:center;min-width:200px;box-shadow:var(--shadow)}
+.node span{display:block;font-family:"IBM Plex Mono",monospace;font-size:11.5px;font-weight:400;color:var(--ink2);margin-top:3px}
+.node em{display:block;font-style:normal;font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.1em;
+  text-transform:uppercase;margin-top:6px}
+.node.a{border-left:4px solid var(--a)} .node.a em{color:var(--a)}
+.node.b{border-left:4px solid var(--b)} .node.b em{color:var(--b)}
+.arrow{color:var(--ink2);font-size:13px;font-family:"IBM Plex Mono",monospace;padding:7px 0;text-align:center;line-height:1.3}
+.split{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+.netbox{margin-top:16px;width:100%;border:1px dashed var(--rule);border-radius:8px;padding:8px;text-align:center;
+  font-family:"IBM Plex Mono",monospace;font-size:11.5px;color:var(--ink2)}
+.stages{display:flex;gap:10px;overflow-x:auto;padding:2px;width:100%}
+.stage{flex:1 1 0;min-width:150px;background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:12px;box-shadow:var(--shadow)}
+.stage h5{margin:0 0 8px;font-family:"IBM Plex Mono",monospace;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink2);font-weight:600}
+.stage ul{margin:0;padding-left:0;list-style:none;font-family:"IBM Plex Mono",monospace;font-size:12.5px}
+.stage li{margin:4px 0;color:var(--ink)}
+.stage li.sa{color:var(--a)} .stage li.sb{color:var(--b)}
+
+/* misc */
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin:18px 0}
+.kv dl{margin:0;background:var(--card);border:1px solid var(--rule);border-radius:8px;padding:12px 14px}
+.kv dt{font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink2)}
+.kv dd{margin:4px 0 0;font-family:"IBM Plex Sans",sans-serif;font-weight:600;font-size:15px}
+.ab{font-family:"IBM Plex Mono",monospace;font-weight:600;font-size:.92em}
+.ab.va{color:var(--a)} .ab.vb{color:var(--b)}
+footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid var(--rule);
+  font-family:"IBM Plex Sans",sans-serif;font-size:13.5px;color:var(--ink2)}
+:focus-visible{outline:2px solid var(--a);outline-offset:2px;border-radius:3px}
+@media (max-width:620px){
+  body{font-size:16px} h2{font-size:24px} .lede{font-size:17px} main{padding:0 16px 70px} .top-in{padding:12px 16px 0}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <h1>A/B en cinq échelles</h1>
+      <span class="sub">4DOP1DR · projet 66045 · commit f7fa4a6</span>
+    </div>
+    <nav class="levels">
+      <a href="#e1"><b>1</b> · C'est quoi ce projet</a>
+      <a href="#e2"><b>2</b> · Les 6 parties</a>
+      <a href="#e3"><b>3</b> · Comment ça marche</a>
+      <a href="#e4"><b>4</b> · Les fichiers</a>
+      <a href="#e5"><b>5</b> · Le jour J</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+<section id="e1">
+  <div class="rail"></div>
+  <p class="eyebrow">Échelle 1 — vue d'ensemble</p>
+  <h2>C'est quoi ce projet, en 90 secondes</h2>
+  <div class="prose">
+
+  <p class="lede">Un test A/B, c'est quand tu as <strong>deux versions de la même page</strong> et que tu envoies la moitié des visiteurs sur la version A, l'autre moitié sur la version B — pour comparer laquelle marche le mieux.</p>
+
+  <p>Ici, les deux versions sont deux applications web qui affichent quasiment la même chose :</p>
+
+  <div class="kv">
+    <dl><dt>Version A</dt><dd class="ab va">Spring Boot · Java 21</dd><dd style="font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:13px;color:var(--ink2)">écoute sur le port 8080</dd></dl>
+    <dl><dt>Version B</dt><dd class="ab vb">Django · Python 3.12</dd><dd style="font-family:'IBM Plex Mono',monospace;font-weight:400;font-size:13px;color:var(--ink2)">écoute sur le port 8000</dd></dl>
+  </div>
+
+  <p>L'une affiche « Version SPRING BOOT », l'autre « Version DJANGO ». C'est <em>volontairement</em> nul comme contenu : ce sont des cobayes. Ce qui est évalué, ce n'est pas les applis.</p>
+
+  <h3>Ce que TU as fait (et ce que tu n'as pas fait)</h3>
+
+  <p>Le code des deux applis, <strong>c'est l'école qui te l'a donné</strong>. Ton travail, c'est <strong>tout ce qui les entoure</strong> — la chaîne qui va de « du code sur mon disque » à « une appli qui tourne sur Internet » :</p>
+
+  <ol>
+    <li><strong>Les mettre en boîte</strong> — Docker : chaque appli devient une image autonome qui contient son langage, ses dépendances et son code.</li>
+    <li><strong>Les faire tourner ensemble</strong> — Docker Compose : une commande, trois conteneurs démarrent.</li>
+    <li><strong>Mettre un aiguilleur devant</strong> — Nginx : c'est lui qui alterne A / B. C'est le cœur de la démo.</li>
+    <li><strong>Automatiser</strong> — GitLab CI : à chaque <code>git push</code>, ça compile, ça teste, ça fabrique les images et ça les livre. Sans toi.</li>
+    <li><strong>Créer les serveurs en code</strong> — Terraform : au lieu de cliquer dans le portail Azure, tu décris l'infra dans des fichiers, et une commande la crée.</li>
+  </ol>
+
+  <p>Ces cinq points sont exactement les cinq gros sujets du cours DevOps. Le projet n'est rien d'autre qu'un prétexte pour les enchaîner.</p>
+
+  <div class="say">
+    <span class="tag">Si le prof dit « présente-moi ton projet »</span>
+    <p>« J'ai deux versions d'une même application web fournies par l'école — une en Spring Boot, une en Django. Mon travail c'est toute la chaîne autour : je les ai conteneurisées avec Docker, orchestrées avec Docker Compose, mis un Nginx devant qui fait l'A/B testing en round-robin sur la route <code>/test</code>, automatisé la compilation, les tests et le déploiement dans un pipeline GitLab CI, et décrit l'infrastructure Azure en Terraform. Le tout découpé en six parties, une par tag Git. »</p>
+  </div>
+
+  <div class="note">
+    <b>Le mot « DevOps », si on te le demande.</b> C'est la culture qui consiste à supprimer le mur entre ceux qui écrivent le code (Dev) et ceux qui le font tourner en production (Ops), en automatisant tout ce qu'il y a entre les deux. Ton projet, c'est littéralement cette automatisation : personne ne copie un fichier à la main nulle part.
+  </div>
+  </div>
+</section>
+
+<section id="e2">
+  <div class="rail"></div>
+  <p class="eyebrow">Échelle 2 — la carte</p>
+  <h2>Les 6 parties, dans l'ordre où tu les as faites</h2>
+  <div class="prose">
+  <p>Le projet a été livré en six étapes, chacune marquée par un <strong>tag Git</strong>. Un tag, c'est une étiquette posée sur un commit précis : ça fige un état du dépôt. Le prof peut se placer sur n'importe lequel pour voir où tu en étais.</p>
+  </div>
+
+  <div class="tw">
+  <table>
+    <tr><th>#</th><th>Tag</th><th>Ce que tu as ajouté</th><th>La phrase</th></tr>
+    <tr><td>1</td><td><code>conteneurisation</code></td><td>Les 2 Dockerfile + un premier <code>docker-compose.yml</code></td><td>« Chaque appli devient une image Docker autonome. »</td></tr>
+    <tr><td>2</td><td><code>nginx</code></td><td><code>nginx/</code> (Dockerfile + conf) et le réseau partagé dans le compose</td><td>« Un reverse proxy alterne entre A et B sur <code>/test</code>. »</td></tr>
+    <tr><td>3</td><td><code>pipeline-ci</code></td><td><code>.gitlab-ci.yml</code> : stages <code>build</code> et <code>test</code></td><td>« À chaque push, GitLab compile et teste les deux applis. »</td></tr>
+    <tr><td>4</td><td><code>infrastructure</code></td><td><code>terraform/</code> : 7 ressources Azure</td><td>« L'infra Azure est décrite en code, créée par <code>terraform apply</code>. »</td></tr>
+    <tr><td>5</td><td><code>deploiement</code></td><td><code>.gitlab-ci.yml</code> : stages <code>deploy</code> et <code>update</code></td><td>« Le pipeline fabrique les images, les pousse sur Azure et relance les apps. »</td></tr>
+    <tr><td>6</td><td><code>nginx-azure</code></td><td><code>nginx-azure/</code> : le même proxy, mais vers les URLs Azure</td><td>« Le même A/B testing, mais sur l'infra déployée en ligne. »</td></tr>
+  </table>
+  </div>
+
+  <div class="prose">
+  <div class="note">
+    <b>Retiens ces trois chiffres</b> — ils reviennent tout le temps : <b>6</b> parties / 6 tags · <b>4</b> Dockerfile (spring-boot, django, nginx, nginx-azure) · <b>7</b> ressources Azure créées par Terraform.
+  </div>
+  </div>
+</section>
+
+<section id="e3">
+  <div class="rail"></div>
+  <p class="eyebrow">Échelle 3 — le mécanisme</p>
+  <h2>Comment ça marche, concrètement</h2>
+  <div class="prose">
+  <p class="lede">Il y a <strong>deux mondes</strong> dans ce projet, et c'est le piège numéro un des débutants : ne les mélange pas. Le monde local (ta machine) et le monde Azure (Internet). Chacun a son Nginx.</p>
+  </div>
+
+  <h3>Monde 1 — en local, sur ta machine</h3>
+  <div class="prose"><p>Tu tapes <code>docker compose up --build</code> et trois conteneurs démarrent. Tu ouvres <code>http://localhost/test</code>, tu rafraîchis : ça affiche A, puis B, puis A, puis B.</p></div>
+
+  <div class="diag">
+    <div class="node">Ton navigateur<span>http://localhost/test</span></div>
+    <div class="arrow">│<br>▼</div>
+    <div class="node">Conteneur <b>nginx-ab</b><span>écoute sur :80 · upstream apps-ab</span></div>
+    <div class="arrow">┌──── round-robin ────┐<br>▼&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;▼</div>
+    <div class="split">
+      <div class="node a">app-spring-boot<span>spring-boot:8080</span><em>Version A</em></div>
+      <div class="node b">app-django<span>django:8000</span><em>Version B</em></div>
+    </div>
+    <div class="netbox">les 3 conteneurs sont sur le réseau Docker <b>ab-network</b> (driver bridge)</div>
+  </div>
+
+  <div class="prose">
+  <p><strong>Ce qui fait l'alternance</strong>, c'est le <em>round-robin</em> : le comportement par défaut de Nginx quand on lui donne une liste de serveurs. Requête 1 → le premier, requête 2 → le deuxième, requête 3 → le premier… Tu n'as codé aucun tirage au sort.</p>
+  <p><strong>Ce qui permet à Nginx de trouver les applis</strong>, c'est le réseau Docker partagé. Dans un réseau Docker, un conteneur peut en joindre un autre <strong>par son nom de service</strong> : Docker fournit un DNS interne. C'est pour ça que la config Nginx écrit <code>server spring-boot:8080;</code> et pas une adresse IP.</p>
+
+  <div class="trap">
+    <span class="tag">Piège classique</span>
+    <p class="q">« Qu'est-ce qui fait le 50/50 ? »</p>
+    <p>Ne dis <strong>jamais</strong> « j'ai codé un randomiseur ». La réponse : « c'est le round-robin par défaut de la directive <code>upstream</code> de Nginx, je n'ai rien ajouté. Si je voulais du pondéré, j'écrirais <code>server X weight=70;</code>. »</p>
+  </div>
+  </div>
+
+  <h3>Monde 2 — en ligne, sur Azure</h3>
+  <div class="prose"><p>Là, deux choses se sont passées, à deux moments différents. C'est la distinction la plus importante de tout le projet :</p>
+
+  <div class="kv">
+    <dl><dt>Une seule fois, à la main</dt><dd>Terraform crée l'infra</dd><dd style="font-family:'IBM Plex Serif',serif;font-weight:400;font-size:14.5px;color:var(--ink2);margin-top:6px">Tu tapes <code>terraform apply</code> depuis ton PC. Ça crée les serveurs vides sur Azure. La consigne dit explicitement que Terraform reste manuel.</dd></dl>
+    <dl><dt>À chaque push, tout seul</dt><dd>Le pipeline remplit l'infra</dd><dd style="font-family:'IBM Plex Serif',serif;font-weight:400;font-size:14.5px;color:var(--ink2);margin-top:6px">GitLab compile, teste, fabrique les images Docker, les pousse sur Azure et redémarre les applis.</dd></dl>
+  </div>
+
+  <p>Le pipeline, c'est quatre étapes qui s'enchaînent. Si une étape échoue, les suivantes ne démarrent même pas.</p>
+  </div>
+
+  <div class="diag">
+    <div class="node">git push sur <b>main</b><span>GitLab détecte .gitlab-ci.yml</span></div>
+    <div class="arrow">│<br>▼</div>
+    <div class="stages">
+      <div class="stage"><h5>1 · build</h5><ul><li class="sa">build-spring</li><li class="sb">build-django</li></ul></div>
+      <div class="stage"><h5>2 · test</h5><ul><li class="sa">test-spring</li><li class="sb">test-django</li></ul></div>
+      <div class="stage"><h5>3 · deploy</h5><ul><li class="sa">push image A</li><li class="sb">push image B</li></ul></div>
+      <div class="stage"><h5>4 · update</h5><ul><li class="sa">restart app A</li><li class="sb">restart app B</li></ul></div>
+    </div>
+    <div class="arrow">▼</div>
+    <div class="split">
+      <div class="node">Azure Container Registry<span>acrabtesting66045.azurecr.io</span></div>
+    </div>
+    <div class="arrow">▼ les App Services vont chercher l'image au démarrage</div>
+    <div class="split">
+      <div class="node a">app-spring-66045<span>.azurewebsites.net</span><em>Version A</em></div>
+      <div class="node b">app-django-66045<span>.azurewebsites.net</span><em>Version B</em></div>
+    </div>
+  </div>
+
+  <div class="prose">
+  <h4>Le vocabulaire Azure minimum</h4>
+  <div class="lines">
+    <div class="k">Resource Group</div><div class="v">Un dossier logique qui contient toutes tes ressources Azure. Le supprimer supprime tout d'un coup.</div>
+    <div class="k">ACR<br>(Container Registry)</div><div class="v">Ton dépôt d'images Docker privé, chez Azure. C'est le « Docker Hub » perso du projet.</div>
+    <div class="k">App Service</div><div class="v">Un serveur web géré par Azure. Tu lui dis « fais tourner cette image Docker », il s'occupe du reste (HTTPS, nom de domaine, redémarrages).</div>
+    <div class="k">App Service Plan</div><div class="v">La machine (et le tarif) sur laquelle tournent tes App Services. Tu en as <b>un seul, en B1</b>, partagé par les deux applis — pour ne pas payer deux fois.</div>
+    <div class="k">Service Principal</div><div class="v">Un compte robot Azure. Le pipeline ne peut pas taper un mot de passe dans un navigateur, donc il s'authentifie avec ça.</div>
+    <div class="k">Identité managée</div><div class="v">Un badge que porte l'App Service lui-même, sans mot de passe, pour aller chercher son image dans l'ACR.</div>
+  </div>
+
+  <div class="say">
+    <span class="tag">La phrase qui montre que tu as compris</span>
+    <p>« Il y a deux identités différentes, exprès. Le pipeline tourne <em>chez moi</em>, donc il lui faut des identifiants : c'est le Service Principal, qui <strong>pousse</strong> les images. L'App Service tourne <em>sur Azure</em>, donc il peut utiliser une identité managée sans mot de passe, qui <strong>tire</strong> les images. Deux usages, deux identités, moindre privilège. »</p>
+  </div>
+  </div>
+</section>
+
+<section id="e4">
+  <div class="rail"></div>
+  <p class="eyebrow">Échelle 4 — le code</p>
+  <h2>Les 6 fichiers à connaître, classés par risque</h2>
+  <div class="prose">
+  <p class="lede">Le prof peut pointer <strong>n'importe quelle ligne</strong> d'un fichier que tu as écrit et te demander de l'expliquer. Voici ces fichiers, du plus probable au moins probable. Si tu n'as le temps que pour trois, fais les trois premiers.</p>
+
+  <div class="note">
+    <b>La règle de tri.</b> Tout ce qui est dans <code>spring-boot/src/</code>, <code>django/demo/</code>, <code>manage.py</code>, <code>pom.xml</code> = code de l'école, tu n'as pas à le défendre (« c'est le code applicatif fourni, je n'y ai pas touché »). Tout le reste — Dockerfile, compose, nginx.conf, .gitlab-ci.yml, terraform — c'est toi.
+  </div>
+  </div>
+
+  <!-- ============ 1 ============ -->
+  <div class="file">
+    <div class="file-h"><span class="rank">1</span><span class="fname">.gitlab-ci.yml</span></div>
+    <p class="why">À la racine du dépôt · couvre 2 des 6 parties (P3 et P5) · c'est LE fichier DevOps du projet</p>
+  </div>
+  <div class="prose">
+  <p>C'est la recette que GitLab exécute automatiquement à chaque <code>git push</code>. Tout est dedans : quoi compiler, quoi tester, quoi déployer, dans quel ordre.</p>
+
+  <h4>Le squelette</h4>
+  <pre><code>stages:
+  - build      # P3 — compiler / installer les dépendances
+  - test       # P3 — lancer les tests unitaires
+  - deploy     # P5 — fabriquer les images et les pousser sur l'ACR
+  - update     # P5 — redémarrer les App Services Azure</code></pre>
+
+  <p>Trois mots à ne jamais confondre :</p>
+  <div class="lines">
+    <div class="k">pipeline</div><div class="v">L'exécution complète, déclenchée par un push. Un pipeline contient des stages.</div>
+    <div class="k">stage</div><div class="v">Une étape. Les stages s'exécutent <b>l'un après l'autre</b>, dans l'ordre déclaré. Si un stage échoue, les suivants sont annulés.</div>
+    <div class="k">job</div><div class="v">Une tâche concrète dans un stage. Les jobs d'un même stage peuvent tourner <b>en parallèle</b> (s'il y a assez de runners).</div>
+  </div>
+
+  <h4>Les jobs de compilation et de test (P3)</h4>
+  <pre><code>build-spring:
+  stage: build
+  image: maven:3.9-eclipse-temurin-21
+  script:
+    - cd spring-boot
+    - mvn compile
+
+build-django:
+  stage: build
+  image: python:3.12-alpine
+  script:
+    - cd django
+    - pip install --no-cache-dir -r requirements.txt
+
+test-spring:
+  stage: test
+  image: maven:3.9-eclipse-temurin-21
+  script:
+    - cd spring-boot
+    - mvn test
+
+test-django:
+  stage: test
+  image: python:3.12-alpine
+  script:
+    - cd django
+    - pip install --no-cache-dir -r requirements.txt
+    - python manage.py test</code></pre>
+
+  <div class="lines">
+    <div class="k">build-spring:</div><div class="v">Le nom du job. C'est toi qui le choisis, il s'affiche tel quel dans l'interface GitLab.</div>
+    <div class="k">stage: build</div><div class="v">À quelle étape ce job appartient.</div>
+    <div class="k">image: maven:3.9-<br>eclipse-temurin-21</div><div class="v">L'image Docker dans laquelle le job va tourner. Celle-ci contient Maven 3.9 et le JDK 21. <b>Chaque job démarre dans un conteneur neuf</b> — c'est ça qui rend le résultat reproductible.</div>
+    <div class="k">script:</div><div class="v">Les commandes à exécuter dans ce conteneur, dans l'ordre. Si l'une renvoie une erreur, le job échoue.</div>
+    <div class="k">- cd spring-boot</div><div class="v">Le runner clone tout le dépôt à la racine du conteneur ; il faut donc entrer dans le bon dossier.</div>
+    <div class="k">- mvn test</div><div class="v">Lance les tests unitaires Java. <code>python manage.py test</code> fait la même chose côté Django.</div>
+  </div>
+
+  <h4>Les jobs de déploiement (P5)</h4>
+  <pre><code>push-spring:
+  stage: deploy
+  image: docker:latest
+  script:
+    - docker login "$ACR_NAME.azurecr.io" -u "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET"
+    - docker build -t "$ACR_NAME.azurecr.io/spring-boot:latest" ./spring-boot
+    - docker push "$ACR_NAME.azurecr.io/spring-boot:latest"
+
+update-spring:
+  stage: update
+  image: mcr.microsoft.com/azure-cli:latest
+  script:
+    - az login --service-principal -u "$ARM_CLIENT_ID" -p "$ARM_CLIENT_SECRET" --tenant "$ARM_TENANT_ID"
+    - az webapp restart --name app-spring-66045 --resource-group rg-abtesting-66045</code></pre>
+
+  <div class="lines">
+    <div class="k">docker login …</div><div class="v">S'authentifier auprès de ton registre Azure, avec les identifiants du compte robot (Service Principal).</div>
+    <div class="k">docker build -t <br>"$ACR_NAME.azurecr.io/<br>spring-boot:latest"</div><div class="v">Fabriquer l'image <b>en la nommant directement avec l'adresse du registre</b>. C'est le nom de l'image qui dit à Docker où la pousser — d'où l'importance que le <code>build -t</code> et le <code>push</code> utilisent exactement la même chaîne.</div>
+    <div class="k">az webapp restart</div><div class="v">Redémarrer l'App Service. Un App Service va chercher son image <b>uniquement au démarrage</b> : sans ce redémarrage, il continuerait à faire tourner l'ancienne version indéfiniment.</div>
+    <div class="k">$ACR_NAME, $ARM_*</div><div class="v">Des variables définies dans GitLab (Settings → CI/CD → Variables), pas dans le fichier. <b>Aucun secret n'est écrit dans le dépôt.</b></div>
+  </div>
+
+  <div class="say">
+    <span class="tag">Si le prof demande « pourquoi update après deploy ? »</span>
+    <p>« Parce que si je redémarrais les App Services <em>avant</em> d'avoir poussé la nouvelle image, ils re-téléchargeraient l'ancienne. L'ordre des stages garantit que <code>update</code> ne tourne que si <code>deploy</code> a réussi. »</p>
+  </div>
+
+  <h4>Le runner — la question qui tombe presque à coup sûr</h4>
+  <p>GitLab ne fait <em>pas</em> tourner ton pipeline. Il se contente de dire « j'ai un job pour quelqu'un ». Celui qui l'exécute, c'est un <strong>runner</strong> : un programme que tu as enregistré toi-même auprès de GitLab, avec un token.</p>
+  <p>Chez toi, ce runner est <strong>un conteneur Docker qui tourne sur ta machine</strong>. Pour chaque job, il fait quatre choses : il démarre un conteneur neuf basé sur l'<code>image:</code> du job, il y clone le dépôt, il exécute le <code>script:</code>, puis il détruit le conteneur et renvoie les logs à GitLab.</p>
+
+  <div class="trap">
+    <span class="tag">La question à tiroir</span>
+    <p class="q">« Comment un job qui tourne dans un conteneur peut-il lui-même faire <code>docker build</code> ? Il y a Docker dedans ? »</p>
+    <p>Non. À l'enregistrement du runner, tu as monté le socket Docker de la machine hôte dans le conteneur : <code>-v /var/run/docker.sock:/var/run/docker.sock</code>. Le client Docker du job envoie donc ses ordres au démon Docker <b>de ta machine</b>. L'alternative, c'est Docker-in-Docker (DinD), plus lourd à configurer. C'est la technique « accès au démon hôte » du TD 07.</p>
+  </div>
+
+  <div class="note">
+    <b>Vérifie ce point sur ton dépôt.</b> Dans tes derniers pipelines, les jobs de déploiement s'appellent <code>push-images</code> et <code>update-apps</code> — donc les deux jobs de chaque stage ont peut-être été fusionnés en un seul depuis. Ouvre ton vrai <code>.gitlab-ci.yml</code> et compte tes jobs : c'est <b>ton</b> fichier que le prof lira, pas celui-ci.
+  </div>
+  </div>
+
+  <!-- ============ 2 ============ -->
+  <div class="file">
+    <div class="file-h"><span class="rank">2</span><span class="fname">docker-compose.yml</span></div>
+    <p class="why">À la racine · c'est la pièce centrale : tous les autres fichiers s'y raccordent</p>
+  </div>
+  <div class="prose">
+  <p>Sans lui, il faudrait taper trois <code>docker run</code> avec les bons ports, le bon réseau, le bon ordre. Avec lui : <code>docker compose up --build</code>.</p>
+
+  <pre><code>services:
+  spring-boot:
+    build: ./spring-boot
+    container_name: app-spring-boot
+    ports:
+      - "8080:8080"
+    networks:
+      - ab-network
+
+  django:
+    build: ./django
+    container_name: app-django
+    ports:
+      - "8000:8000"
+    networks:
+      - ab-network
+
+  nginx:
+    build: ./nginx
+    container_name: nginx-ab
+    ports:
+      - "80:80"
+    depends_on:
+      - spring-boot
+      - django
+    networks:
+      - ab-network
+
+networks:
+  ab-network:
+    driver: bridge</code></pre>
+
+  <div class="lines">
+    <div class="k">services:</div><div class="v">La liste des conteneurs à lancer. Ici trois.</div>
+    <div class="k">spring-boot:</div><div class="v"><b>Le nom du service</b> — et c'est aussi le nom DNS par lequel les autres conteneurs le joignent. C'est exactement cette chaîne qu'on retrouve dans <code>nginx.conf</code>.</div>
+    <div class="k">build: ./spring-boot</div><div class="v">Construis l'image à partir du Dockerfile situé dans ce dossier (au lieu de télécharger une image toute faite avec <code>image:</code>).</div>
+    <div class="k">container_name:</div><div class="v">Un nom fixe et lisible pour le conteneur, sinon Docker en invente un aléatoire.</div>
+    <div class="k">ports:<br>- "8080:8080"</div><div class="v"><b>gauche = ta machine, droite = le conteneur.</b> C'est cette ligne — et elle seule — qui rend l'appli joignable depuis ton navigateur.</div>
+    <div class="k">depends_on:</div><div class="v">Ordre de <b>démarrage</b> : Nginx démarre après les deux applis.</div>
+    <div class="k">networks: ab-network<br>driver: bridge</div><div class="v">Un réseau Docker privé partagé par les trois conteneurs. C'est lui qui permet la résolution par nom de service. <code>bridge</code> est le driver par défaut : réseau virtuel isolé, l'extérieur n'entre que par les ports listés dans <code>ports:</code>.</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Question quasi certaine</span>
+    <p class="q">« À quoi sert <code>depends_on</code> exactement ? »</p>
+    <p>La réponse complète, celle qui rapporte des points : « <code>depends_on</code> garantit l'ordre de <strong>démarrage</strong>, mais <strong>pas</strong> que l'application soit prête à répondre. Docker considère le service démarré dès que le processus est lancé, même si Spring Boot met encore dix secondes à s'initialiser. Pour vraiment attendre, il faudrait un <code>healthcheck</code> sur les services. »</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Le lien à voir entre les fichiers</span>
+    <p class="q">« Change le port de Django de 8000 à 8050. »</p>
+    <p>C'est LE test de compréhension. Il y a <strong>trois endroits</strong>, et en oublier un casse tout : <code>django/Dockerfile</code> (le <code>CMD … runserver 0.0.0.0:8050</code> et l'<code>EXPOSE</code>), <code>docker-compose.yml</code> (la ligne <code>ports:</code>), et <code>nginx/nginx.conf</code> (<code>server django:8050;</code>). Dis-le à voix haute avant de taper.</p>
+  </div>
+  </div>
+
+  <!-- ============ 3 ============ -->
+  <div class="file">
+    <div class="file-h"><span class="rank">3</span><span class="fname">nginx/nginx.conf</span></div>
+    <p class="why">Dossier <code>nginx/</code> · c'est le fichier qui <em>fait</em> l'A/B testing — 8 lignes utiles, connais-les par cœur</p>
+  </div>
+  <div class="prose">
+  <pre><code>events { }
+
+http {
+    upstream apps-ab {
+        server spring-boot:8080;
+        server django:8000;
+    }
+
+    server {
+        listen 80;
+
+        location /test {
+            proxy_pass http://apps-ab/;
+        }
+    }
+}</code></pre>
+
+  <div class="lines">
+    <div class="k">events { }</div><div class="v">Bloc obligatoire dans une conf Nginx, même vide. Il règle la gestion des connexions ; les valeurs par défaut nous vont.</div>
+    <div class="k">http { }</div><div class="v">Le bloc qui contient toute la configuration HTTP.</div>
+    <div class="k">upstream apps-ab { }</div><div class="v">Déclare un <b>groupe de serveurs backend</b> sous un nom que tu choisis. Quand un groupe contient plusieurs serveurs, Nginx alterne entre eux : c'est le round-robin, et c'est ça, ton A/B testing.</div>
+    <div class="k">server spring-boot:8080;</div><div class="v">Un membre du groupe, désigné par son nom de service Docker (résolu par le DNS du réseau <code>ab-network</code>) et son port <b>interne</b> au conteneur.</div>
+    <div class="k">listen 80;</div><div class="v">Nginx écoute sur le port 80, le port HTTP standard — d'où l'URL <code>http://localhost/test</code> sans numéro de port.</div>
+    <div class="k">location /test { }</div><div class="v">« Pour toute requête dont le chemin commence par <code>/test</code>, applique ce qui suit. »</div>
+    <div class="k">proxy_pass<br>http://apps-ab/;</div><div class="v">Transmets la requête au groupe <code>apps-ab</code>. <b>Le slash final est capital</b> — voir juste en dessous.</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Le détail que le prof adore</span>
+    <p class="q">« Pourquoi le slash à la fin de <code>proxy_pass http://apps-ab/</code> ? »</p>
+    <p><strong>Avec</strong> le slash : Nginx remplace le morceau capté par le <code>location</code> (<code>/test</code>) par <code>/</code>. Le backend reçoit une requête sur <code>/</code>, sa page d'accueil : ça marche.<br>
+    <strong>Sans</strong> le slash : le chemin est transmis tel quel. Spring et Django reçoivent <code>/test</code>, qu'ils ne connaissent pas : <strong>404</strong>.</p>
+  </div>
+
+  <div class="say">
+    <span class="tag">Ton anecdote de debug — sors-la, elle vaut de l'or</span>
+    <p>« Au début j'avais nommé l'upstream <code>apps_ab</code> avec un underscore, et je me prenais un 400 Bad Request. En cherchant, j'ai compris que Nginx met le nom de l'upstream dans l'en-tête <code>Host</code> de la requête transmise, et que Tomcat — le serveur embarqué dans Spring Boot — applique strictement la RFC, qui interdit l'underscore dans un nom d'hôte. J'ai renommé en <code>apps-ab</code> avec un tiret, et c'est passé. »</p>
+  </div>
+
+  <p>Le <code>nginx/Dockerfile</code> qui va avec tient en trois lignes : partir de <code>nginx:alpine</code>, copier ta conf par-dessus celle par défaut (<code>COPY nginx.conf /etc/nginx/nginx.conf</code>), déclarer <code>EXPOSE 80</code>. La consigne demandait un Dockerfile personnalisé plutôt qu'un simple montage de volume : l'image devient autonome, elle embarque sa configuration et se déploie n'importe où.</p>
+  </div>
+
+  <!-- ============ 4 ============ -->
+  <div class="file">
+    <div class="file-h"><span class="rank">4</span><span class="fname">spring-boot/Dockerfile · django/Dockerfile</span></div>
+    <p class="why">La toute première partie du projet · questions garanties sur le multi-stage et sur <code>EXPOSE</code></p>
+  </div>
+  <div class="prose">
+  <p>Un Dockerfile, c'est la recette d'une image : une suite d'instructions, chacune produisant une couche. Celui de Spring Boot est en <strong>deux étapes</strong> (multi-stage), celui de Django en une seule.</p>
+
+  <pre><code># Etape 1 : compilation et empaquetage avec Maven
+FROM maven:3.9-eclipse-temurin-21 AS build
+WORKDIR /app
+COPY pom.xml .
+COPY src ./src
+RUN mvn clean package -DskipTests
+
+# Etape 2 : image finale legere avec uniquement la JRE
+FROM eclipse-temurin:21-jre-alpine
+LABEL author="66045"
+WORKDIR /app
+COPY --from=build /app/target/*.jar app.jar
+EXPOSE 8080
+CMD ["java", "-jar", "/app/app.jar"]</code></pre>
+
+  <div class="lines">
+    <div class="k">FROM … AS build</div><div class="v">Première étape, sur une image qui contient Maven et le JDK 21. Le <code>AS build</code> lui donne un nom pour pouvoir y piocher plus tard.</div>
+    <div class="k">WORKDIR /app</div><div class="v">Le dossier de travail pour toutes les instructions suivantes (créé s'il n'existe pas). Évite de répéter <code>cd</code>.</div>
+    <div class="k">COPY pom.xml .<br>COPY src ./src</div><div class="v">On copie la description des dépendances puis le code source depuis ta machine vers l'image.</div>
+    <div class="k">RUN mvn clean package<br>-DskipTests</div><div class="v">Maven compile et produit le <code>.jar</code>. On saute les tests <b>ici</b> parce qu'ils tournent déjà dans le pipeline (job <code>test-spring</code>) : les refaire allongerait le build pour rien.</div>
+    <div class="k">FROM eclipse-temurin:<br>21-jre-alpine</div><div class="v"><b>Deuxième étape = nouvelle image, repartie de zéro.</b> Elle ne contient qu'une JRE (de quoi <em>exécuter</em> du Java, pas le compiler) sur Alpine Linux.</div>
+    <div class="k">COPY --from=build<br>/app/target/*.jar app.jar</div><div class="v">On récupère uniquement le <code>.jar</code> produit à l'étape 1. Maven, le JDK et les sources restent derrière : c'est tout l'intérêt du multi-stage.</div>
+    <div class="k">EXPOSE 8080</div><div class="v">Une <b>déclaration</b>, pas une action : ça documente le port utilisé. Ça n'ouvre rien.</div>
+    <div class="k">CMD ["java","-jar",…]</div><div class="v">La commande lancée au démarrage du conteneur. Écrite en tableau JSON (« forme exec ») : pas de shell intermédiaire.</div>
+  </div>
+
+  <div class="say">
+    <span class="tag">La phrase à connaître par cœur</span>
+    <p>« Le multi-stage sépare l'environnement de <strong>construction</strong> de l'environnement d'<strong>exécution</strong>. La première étape a besoin de Maven et du JDK pour produire le jar ; l'image finale n'a besoin que d'une JRE pour le lancer. Résultat : environ 200 Mo au lieu de 800, et une surface d'attaque réduite puisque les outils de build ne sont pas embarqués en production. »</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Le test qu'il va peut-être te faire faire en direct</span>
+    <p class="q">« Commente <code>EXPOSE 8080</code>, reconstruis, relance. Ça marche encore ? »</p>
+    <p><strong>Oui, ça marche encore.</strong> <code>EXPOSE</code> est purement déclaratif — de la métadonnée pour les humains et les outils. Ce qui rend réellement l'appli joignable, c'est le <code>-p 8080:8080</code> du <code>docker run</code>, ou la section <code>ports:</code> du compose. Dis-le avant de taper la commande : c'est ça qu'il évalue.</p>
+  </div>
+
+  <h4>Côté Django, les trois lignes qui comptent</h4>
+  <pre><code>FROM python:3.12-alpine
+WORKDIR /app
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+COPY . .
+RUN python manage.py makemigrations &amp;&amp; python manage.py migrate
+EXPOSE 8000
+CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
+
+  <div class="lines">
+    <div class="k">COPY requirements.txt<br>puis RUN pip install<br>puis COPY . .</div><div class="v">L'ordre n'est pas anodin : Docker met chaque instruction en cache. En installant les dépendances <b>avant</b> de copier le code, une simple modification du code ne réinvalide pas l'étape <code>pip install</code> — le rebuild est bien plus rapide.</div>
+    <div class="k">--no-cache-dir</div><div class="v">pip garde normalement une copie des paquets téléchargés. Inutile dans une image qu'on n'installe qu'une fois : on évite de la faire grossir.</div>
+    <div class="k">runserver <b>0.0.0.0</b>:8000</div><div class="v">Le détail crucial. Sans ça, Django n'écoute que sur <code>127.0.0.1</code>, c'est-à-dire la boucle locale <b>interne au conteneur</b> — inaccessible depuis l'extérieur, même avec le bon mapping de ports. <code>0.0.0.0</code> = « écoute sur toutes les interfaces réseau ».</div>
+  </div>
+
+  <div class="note">
+    <b>Sois honnête si on te pousse :</b> <code>manage.py runserver</code> est le serveur de <em>développement</em> de Django. En vraie production on mettrait Gunicorn ou uWSGI. Ici les applis sont volontairement minimales, le sujet du cours c'est la chaîne autour.
+  </div>
+
+  <p>Le <code>.dockerignore</code> à côté de chaque Dockerfile joue le même rôle que le <code>.gitignore</code> : il exclut des fichiers du contexte envoyé au démon Docker au moment du build (<code>target/</code>, <code>.git/</code>, caches, fichiers d'IDE). Bénéfice double : build plus rapide, et pas de fichier sensible embarqué par accident dans l'image.</p>
+  </div>
+
+  <!-- ============ 5 ============ -->
+  <div class="file">
+    <div class="file-h"><span class="rank">5</span><span class="fname">terraform/main.tf</span></div>
+    <p class="why">Dossier <code>terraform/</code> · la partie la plus dense · 4 fichiers, 7 ressources Azure</p>
+  </div>
+  <div class="prose">
+  <p><strong>Infrastructure as Code</strong> : au lieu de cliquer dans le portail Azure pour créer un serveur, tu écris ce que tu veux dans des fichiers <code>.tf</code>, tu versionnes ces fichiers dans Git, et une commande fait exister l'infrastructure. Reproductible, relisible, et destructible d'un coup.</p>
+
+  <div class="lines">
+    <div class="k">providers.tf</div><div class="v">Quel « plugin » Terraform utiliser pour parler à Azure : <code>hashicorp/azurerm</code>, version figée à <code>4.66.0</code> pour qu'une mise à jour ne casse rien. Le bloc <code>features {}</code> est obligatoire même vide.</div>
+    <div class="k">variables.tf</div><div class="v">9 paramètres avec valeurs par défaut : la région, les noms des ressources, les noms d'images. Tout ce qu'on pourrait vouloir changer sans toucher au reste.</div>
+    <div class="k">main.tf</div><div class="v">Les 7 ressources à créer. Le cœur.</div>
+    <div class="k">outputs.tf</div><div class="v">3 valeurs affichées à la fin de l'<code>apply</code> : l'adresse du registre et les deux URLs publiques. Pratique pour ne pas aller les chercher dans le portail.</div>
+    <div class="k">.terraform.lock.hcl</div><div class="v">Généré automatiquement, verrouille la version exacte du provider. Versionné dans Git, comme le recommande le TD 09.</div>
+  </div>
+
+  <h4>Les 7 ressources, et pourquoi chacune est là</h4>
+  <div class="tw">
+  <table>
+    <tr><th>#</th><th>Ressource</th><th>Rôle</th></tr>
+    <tr><td>1</td><td><code>azurerm_resource_group</code></td><td>Le dossier qui contient tout le reste.</td></tr>
+    <tr><td>2</td><td><code>azurerm_user_assigned_identity</code></td><td>Le badge sans mot de passe que porteront les App Services.</td></tr>
+    <tr><td>3</td><td><code>azurerm_container_registry</code></td><td>Le registre privé où le pipeline pousse les images. SKU <code>Basic</code> = le moins cher.</td></tr>
+    <tr><td>4</td><td><code>azurerm_role_assignment</code></td><td>Donne le rôle <code>AcrPull</code> au badge sur ce registre. <b>Sans cette ligne, les App Services n'ont pas le droit de télécharger leur image.</b></td></tr>
+    <tr><td>5</td><td><code>azurerm_service_plan</code></td><td>La machine qui héberge les deux applis. Linux, SKU <code>B1</code> : le tier le moins cher qui accepte des conteneurs personnalisés.</td></tr>
+    <tr><td>6&nbsp;·&nbsp;7</td><td>2 × <code>azurerm_linux_web_app</code></td><td>Les deux App Services, un par version, chacun configuré pour tirer son image depuis l'ACR avec le badge.</td></tr>
+  </table>
+  </div>
+
+  <pre><code>resource "azurerm_linux_web_app" "spring" {
+  name                = var.spring_app_name
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  service_plan_id     = azurerm_service_plan.app_service_plan.id
+
+  site_config {
+    container_registry_use_managed_identity       = true
+    container_registry_managed_identity_client_id = azurerm_user_assigned_identity.identity.client_id
+
+    application_stack {
+      docker_image_name   = var.spring_image
+      docker_registry_url = "https://${azurerm_container_registry.acr.login_server}"
+    }
+  }
+
+  identity {
+    type         = "UserAssigned"
+    identity_ids = [azurerm_user_assigned_identity.identity.id]
+  }
+
+  app_settings = {
+    PORT = "8080"
+  }
+}</code></pre>
+
+  <div class="lines">
+    <div class="k">resource "type" "nom"</div><div class="v">Le type est imposé par le provider ; le second nom est <b>ton</b> étiquette interne, pour référencer la ressource ailleurs dans le code.</div>
+    <div class="k">var.spring_app_name</div><div class="v">Renvoie à la variable définie dans <code>variables.tf</code>.</div>
+    <div class="k">azurerm_resource_group<br>.rg.name</div><div class="v">Une référence à une <b>autre</b> ressource. C'est comme ça que Terraform déduit tout seul l'ordre de création : il ne peut pas créer l'App Service avant le Resource Group dont il lit le nom.</div>
+    <div class="k">site_config { … }</div><div class="v">Où trouver l'image et comment s'authentifier : par identité managée, pas par mot de passe.</div>
+    <div class="k">identity { … }</div><div class="v">Attache concrètement le badge à cet App Service.</div>
+    <div class="k">app_settings = {<br>PORT = "8080" }</div><div class="v">Une variable d'environnement passée au conteneur : elle dit à Azure sur quel port l'application écoute.</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Le piège maison</span>
+    <p class="q">« Pourquoi <code>PORT</code> et pas <code>WEBSITES_PORT</code> ? »</p>
+    <p>Le TD 08 le précise noir sur blanc : Azure a changé sa gestion des conteneurs, il faut désormais une variable <code>PORT</code>. Et à défaut de variable, App Service lit l'instruction <code>EXPOSE</code> de l'image pour deviner le port — que tes deux Dockerfile fournissent. C'est cohérent des deux côtés.</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Deux questions déjà annoncées par le prof</span>
+    <p class="q">« Si je prends ton Terraform et que je le lance sur MON compte Azure ? »</p>
+    <p>« En théorie, rien à modifier : le provider azurerm cherche d'abord les variables d'environnement <code>ARM_*</code>, sinon la session <code>az login</code> active. Vous faites <code>az login</code>, <code>terraform init</code>, <code>terraform apply</code>. Deux réserves : si votre abonnement restreint les régions autrement, il faudra ajuster <code>-var="location=…"</code> ; et comme les noms d'ACR et d'App Service sont <strong>uniques au niveau mondial</strong>, il faudra changer ceux qui contiennent mon matricule. »</p>
+    <p class="q">« Montre-moi ce que Terraform a créé. »</p>
+    <p><code>terraform state list</code> pour ce que Terraform croit avoir créé, <code>az resource list -g rg-abtesting-66045 -o table</code> pour ce qui existe vraiment côté Azure, <code>terraform output</code> pour les URLs.</p>
+  </div>
+
+  <h4>Les 5 commandes Terraform</h4>
+  <div class="lines">
+    <div class="k">terraform init</div><div class="v">Télécharge le provider. À faire une fois, au début.</div>
+    <div class="k">terraform validate</div><div class="v">Vérifie que la syntaxe tient debout, sans rien créer.</div>
+    <div class="k">terraform plan</div><div class="v">Affiche ce qui <b>serait</b> créé, modifié ou détruit. Rien n'est appliqué.</div>
+    <div class="k">terraform apply</div><div class="v">Fait converger le réel vers ce que décrit ton code.</div>
+    <div class="k">terraform destroy</div><div class="v">Détruit tout ce qui figure dans le state. <b>Irréversible.</b></div>
+  </div>
+
+  <div class="note">
+    <b>Le state, si on te le demande.</b> Le fichier <code>terraform.tfstate</code> est la mémoire de Terraform : la liste de ce qu'il a créé et sous quelle identité Azure. C'est en comparant ce state, ton code et la réalité du cloud qu'il décide quoi faire. Il n'est pas versionné dans Git — il peut contenir des valeurs sensibles.
+  </div>
+  </div>
+
+  <!-- ============ 6 ============ -->
+  <div class="file">
+    <div class="file-h"><span class="rank">6</span><span class="fname">nginx-azure/nginx.conf</span></div>
+    <p class="why">Dossier <code>nginx-azure/</code> · la dernière partie, la plus courte · une seule notion à maîtriser : SNI</p>
+  </div>
+  <div class="prose">
+  <p>Même idée que le Nginx local, mais les backends ne sont plus des conteneurs voisins : ce sont deux URLs publiques Azure, joignables uniquement en HTTPS.</p>
+
+  <pre><code>events { }
+
+http {
+    upstream apps-ab-azure {
+        server app-spring-66045.azurewebsites.net:443;
+        server app-django-66045.azurewebsites.net:443;
+    }
+
+    server {
+        listen 80;
+
+        location /test {
+            proxy_pass https://apps-ab-azure/;
+            proxy_ssl_server_name on;
+            proxy_ssl_name $proxy_host;
+        }
+    }
+}</code></pre>
+
+  <div class="lines">
+    <div class="k">…azurewebsites.net:443</div><div class="v">Port 443 = HTTPS. Un App Service ne répond pas en HTTP non chiffré.</div>
+    <div class="k">proxy_pass <b>https</b>://…</div><div class="v"><code>https</code> et non <code>http</code> : Nginx doit établir une connexion chiffrée sortante.</div>
+    <div class="k">proxy_ssl_server_name on;</div><div class="v">Active <b>SNI</b> sur cette connexion sortante. Sans ça, la connexion échoue.</div>
+    <div class="k">proxy_ssl_name $proxy_host;</div><div class="v">Le nom de domaine à annoncer dans le SNI, repris dynamiquement du serveur choisi.</div>
+  </div>
+
+  <div class="say">
+    <span class="tag">Explique SNI comme ça</span>
+    <p>« SNI, <em>Server Name Indication</em>, c'est l'extension TLS qui permet au client d'annoncer <strong>quel domaine il veut joindre</strong> dès le début du handshake, avant que le certificat soit choisi. Azure App Service héberge des milliers d'applications derrière les mêmes adresses IP : sans SNI, il ne sait pas quel certificat présenter ni vers quelle application router, et la connexion échoue. »</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Si on creuse — réponds honnêtement, ça paie</span>
+    <p class="q">« Et l'en-tête <code>Host</code> ? »</p>
+    <p>C'est la limite connue de cette configuration : quand un upstream contient plusieurs serveurs, l'en-tête <code>Host</code> transmis vaut par défaut le nom de l'upstream, qu'Azure ne reconnaît pas comme une de ses applis. « En local le round-robin fonctionne pleinement ; pour une vraie production sur Azure, je gérerais le <code>Host</code> par backend, avec un <code>map</code> et un <code>split_clients</code> — ou j'utiliserais Azure Front Door, le service natif pour ce type de routage, que la consigne mentionne d'ailleurs. » Ne prétends pas que c'est parfait : reconnaître une limite en sachant comment la lever vaut mieux que bluffer.</p>
+  </div>
+  </div>
+</section>
+
+<section id="e5">
+  <div class="rail"></div>
+  <p class="eyebrow">Échelle 5 — le jour J</p>
+  <h2>Ce qu'on va te demander de faire, pas juste de dire</h2>
+  <div class="prose">
+  <p class="lede">La défense n'est pas un oral de récitation : le prof ouvre ton dépôt, pointe une ligne, et te demande souvent de <strong>modifier quelque chose en direct</strong>. Voici les gestes types.</p>
+
+  <h4>1 · Changer un port</h4>
+  <p>Trois fichiers, toujours les mêmes : le <code>Dockerfile</code> de l'appli (<code>CMD</code> + <code>EXPOSE</code>), le <code>docker-compose.yml</code> (<code>ports:</code>), le <code>nginx/nginx.conf</code> (la ligne <code>server …:port;</code> de l'upstream). Puis <code>docker compose up --build</code> et tu testes <code>/test</code>.</p>
+
+  <h4>2 · Commenter <code>EXPOSE</code> et prouver que ça marche encore</h4>
+  <p>Annonce le résultat <em>avant</em> de lancer : « ça va continuer de fonctionner, parce qu'<code>EXPOSE</code> ne fait que documenter ». Puis rebuild, relance, montre.</p>
+
+  <h4>3 · Enlever <code>depends_on</code> et expliquer ce que ça change</h4>
+  <p>Les services démarrent en parallèle ; Nginx peut se lancer avant les applis et échouer sur ses premières requêtes. Ça ne rend pas le projet cassé, ça le rend imprévisible.</p>
+
+  <h4>4 · Ajouter une variable ou une condition au pipeline</h4>
+  <p>Deux formes à savoir écrire : un bloc <code>variables:</code> en haut du fichier (ou dans un job), et une règle <code>rules: - if: '$CI_COMMIT_BRANCH == "main"'</code> pour qu'un job ne tourne que sur certaines branches. Même logique avec <code>$CI_COMMIT_TAG</code> pour ne réagir qu'aux tags.</p>
+
+  <h4>5 · Renommer les images (par exemple ajouter un suffixe)</h4>
+  <p>Le nom d'une image apparaît là où on la construit et là où on l'utilise : dans le <code>.gitlab-ci.yml</code> (<code>docker build -t</code> <b>et</b> <code>docker push</code>, les deux doivent rester identiques) et dans <code>terraform/variables.tf</code> (<code>spring_image</code>, <code>django_image</code>). Change les deux côtés ou l'App Service cherchera une image qui n'existe pas.</p>
+
+  <hr>
+
+  <h3>Le vocabulaire minimum vital</h3>
+  <div class="lines">
+    <div class="k">image</div><div class="v">Un modèle figé, en lecture seule, qui contient une appli et tout ce qu'il lui faut pour tourner.</div>
+    <div class="k">conteneur</div><div class="v">Une instance en cours d'exécution d'une image. Une image, plusieurs conteneurs possibles.</div>
+    <div class="k">registre (registry)</div><div class="v">Le dépôt où l'on stocke et partage des images. Docker Hub en public, ton ACR en privé.</div>
+    <div class="k">reverse proxy</div><div class="v">Un serveur placé <b>devant</b> d'autres serveurs : il reçoit les requêtes des clients et les redistribue. Ici, Nginx.</div>
+    <div class="k">round-robin</div><div class="v">Répartition à tour de rôle, chacun son tour, sans mémoire.</div>
+    <div class="k">CI / CD</div><div class="v">Intégration continue (on compile et teste automatiquement à chaque modification) / livraison continue (on déploie automatiquement dans la foulée).</div>
+    <div class="k">runner</div><div class="v">Le programme qui exécute réellement les jobs du pipeline. Chez toi : un conteneur Docker sur ta machine.</div>
+    <div class="k">Infrastructure as Code</div><div class="v">Décrire ses serveurs dans des fichiers versionnés plutôt que de cliquer dans une interface.</div>
+    <div class="k">idempotent</div><div class="v">Se dit d'une opération qu'on peut relancer sans changer le résultat. <code>terraform apply</code> deux fois de suite : la deuxième ne fait rien.</div>
+  </div>
+
+  <hr>
+
+  <h3>Si le prof voit du rouge dans tes pipelines</h3>
+  <p>Ça peut arriver, et ce n'est pas grave <em>si tu sais dire pourquoi</em>. Un job GitLab qui reste en <strong>Pending</strong> avec la mention <em>stuck</em> ne signifie pas que ton code est cassé : ça veut dire qu'<strong>aucun runner n'est en ligne</strong> pour le prendre. Et ton runner, c'est un conteneur Docker sur ta machine — s'il n'est pas démarré, personne n'exécute rien.</p>
+  <div class="say">
+    <span class="tag">La réponse, si la question tombe</span>
+    <p>« Ce job est en attente, pas en échec : mon runner est un conteneur Docker enregistré sur ma machine, et il n'était pas démarré. Dès qu'il repasse en ligne, GitLab lui redonne le job. Le pipeline vert sur le tag <code>nginx-azure</code> est passé sur ce même commit. »</p>
+  </div>
+
+  <hr>
+
+  <h3>Les trois réflexes d'oral</h3>
+  <ol>
+    <li><strong>Ne mens jamais sur ce que tu n'as pas fait.</strong> « Je ne l'ai pas mis en place, mais voilà comment je m'y prendrais » vaut infiniment mieux qu'une invention qu'il vérifiera en trente secondes.</li>
+    <li><strong>Si tu bloques, raisonne à voix haute.</strong> « Je ne suis pas certain, mais d'instinct je dirais X, parce que Y. » Tu montres une méthode plutôt qu'un trou.</li>
+    <li><strong>Explique ce que tu tapes pendant que tu le tapes.</strong> Le silence pendant une manipulation est le pire moment de la défense ; le commentaire à voix haute prouve que tu sais où tu vas.</li>
+  </ol>
+
+  <div class="note">
+    <b>Pour aller plus loin,</b> le dossier <code>PREPA/</code> contient le détail complet, partie par partie : <code>02-architecture.md</code> pour les schémas, <code>03</code> à <code>08</code> pour chaque partie du projet ligne par ligne, et surtout <code>XX-questions-defense.md</code> — les 13 questions annoncées par le prof, avec les réponses et les commandes exactes. Si tu ne lis qu'une chose de plus après cette page, c'est celle-là.
+  </div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  Fiche de révision — projet A/B testing 4DOP1DR, matricule 66045, dépôt à l'état <span class="mono">f7fa4a6</span>.
+  Le code cité provient des fiches <span class="mono">PREPA/</span> ; en cas de doute, c'est toujours ton dépôt qui fait foi.
+</footer>
