@@ -1,0 +1,31 @@
+# Java / Maven
+target/
+*.class
+*.jar
+*.war
+
+# Python / Django
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.egg-info/
+db.sqlite3
+venv/
+env/
+.env
+
+# Docker
+mysql_data/
+
+# IDEs
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

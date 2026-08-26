@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  flask-service:
+    build: ./service-python-main
+    container_name: flask-service
+    ports:
+      - "5001:5000"
+
+  spring-service:
+    build: ./service-java-main
+    container_name: spring-service
+    ports:
+      - "8080:8080"
+    environment:
+      - FLASK_URL=http://flask-service:5000
+    depends_on:
+      - flask-service

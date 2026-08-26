@@ -1,0 +1,21 @@
+# Ignorer les fichiers de configuration sensibles
+# contenant des mots de passes ou des clés API
+.env   
+
+# Environnement virtuel 
+venv/         
+
+# Ignorer les fichiers temporaires et inutiles  
+
+## Fichiers de logs (ex: `server.log`) 
+*.log   
+## Fichiers compilés en bytecode Python     
+*.pyc  
+## Fichier caché généré automatiquement par macOS      
+.DS_Store    
+
+# Ignorer les fichiers liés à Git  
+## Dossier contenant l'historique Git
+.git/ 
+## Fichier de configuration Git         
+.gitignore   

@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Révision défense — DEVOPS 4DOP1DR</title>
+<style>
+  :root{
+    --bg:#0e1014; --bg2:#151821; --card:#1a1e28; --card2:#20252f;
+    --tx:#e7eaf0; --mut:#9aa3b2; --line:#2a3140;
+    --acc:#5aa2ff; --acc2:#7cc4ff;
+    --red:#ff5d5d; --org:#ffb24d; --grn:#4dd17a;
+    --redbg:rgba(255,93,93,.10); --orgbg:rgba(255,178,77,.10); --grnbg:rgba(77,209,122,.10);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--tx);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;font-size:16px;line-height:1.55;padding-bottom:90px}
+  #progress{position:fixed;top:0;left:0;height:3px;width:0;background:linear-gradient(90deg,var(--acc),var(--grn));z-index:200;transition:width .08s linear}
+  header{position:sticky;top:0;z-index:100;background:rgba(14,16,20,.92);backdrop-filter:blur(10px);border-bottom:1px solid var(--line);padding:10px 14px 8px}
+  .htitle{font-size:14px;font-weight:700;letter-spacing:.3px;color:var(--tx);margin:0 0 8px;display:flex;align-items:center;gap:8px}
+  .htitle .sub{font-weight:500;color:var(--mut);font-size:11px}
+  .bar{display:flex;gap:8px;align-items:center}
+  .search{flex:1;display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:10px;padding:8px 10px}
+  .search input{flex:1;background:transparent;border:0;color:var(--tx);font-size:15px;outline:none}
+  .search svg{width:16px;height:16px;color:var(--mut);flex:none}
+  .qbtn{background:var(--bg2);border:1px solid var(--line);color:var(--tx);border-radius:10px;padding:8px 11px;font-size:13px;font-weight:600;white-space:nowrap}
+  .qbtn.on{background:var(--acc);border-color:var(--acc);color:#07101f}
+  .legend{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
+  .lg{display:flex;align-items:center;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:20px;padding:5px 11px;font-size:12px;font-weight:600;user-select:none}
+  .lg .dot{width:9px;height:9px;border-radius:50%}
+  .lg[data-l=red] .dot{background:var(--red)} .lg[data-l=orange] .dot{background:var(--org)} .lg[data-l=green] .dot{background:var(--grn)}
+  .lg.off{opacity:.35;text-decoration:line-through}
+  nav.toc{display:flex;gap:7px;overflow-x:auto;padding:10px 14px;border-bottom:1px solid var(--line);background:var(--bg);scrollbar-width:none}
+  nav.toc::-webkit-scrollbar{display:none}
+  nav.toc a{flex:none;font-size:12.5px;font-weight:600;color:var(--mut);background:var(--bg2);border:1px solid var(--line);border-radius:8px;padding:6px 10px;text-decoration:none;white-space:nowrap}
+  main{padding:14px;max-width:760px;margin:0 auto}
+  section{margin:0 0 26px}
+  h2.sec{font-size:13px;text-transform:uppercase;letter-spacing:1px;color:var(--acc2);margin:22px 0 12px;padding-bottom:6px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+  h2.sec .n{font-size:11px;color:var(--mut);border:1px solid var(--line);border-radius:6px;padding:2px 7px;font-weight:700}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px;margin:0 0 12px}
+  .card h3{margin:0 0 9px;font-size:15px;color:var(--acc2)}
+  .lead{color:var(--mut);font-size:13.5px;margin:-2px 0 12px}
+  /* phrases */
+  .phrase{background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--acc);border-radius:10px;padding:11px 13px;margin:0 0 10px}
+  .phrase .t{font-size:11px;text-transform:uppercase;letter-spacing:.6px;color:var(--mut);font-weight:700;margin-bottom:4px}
+  .phrase .p{font-size:14.5px;color:var(--tx)}
+  /* tables */
+  .tbl{width:100%;border-collapse:collapse;font-size:13.5px;display:block;overflow-x:auto}
+  .tbl th,.tbl td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+  .tbl th{background:var(--bg2);color:var(--acc2);font-size:12px;text-transform:uppercase;letter-spacing:.4px;white-space:nowrap}
+  .tbl td code{white-space:nowrap}
+  /* flow */
+  pre.flow{background:#0a0c10;border:1px solid var(--line);border-radius:12px;padding:14px;overflow-x:auto;font-size:12.5px;line-height:1.5;color:#cdd6e4;font-family:"SF Mono",Menlo,Consolas,monospace}
+  code{background:#0a0c10;border:1px solid var(--line);border-radius:5px;padding:1px 5px;font-size:.9em;font-family:"SF Mono",Menlo,Consolas,monospace;color:#bcd}
+  /* question */
+  .q{background:var(--card);border:1px solid var(--line);border-left-width:4px;border-radius:12px;margin:0 0 10px;overflow:hidden}
+  .q[data-imp=red]{border-left-color:var(--red)} .q[data-imp=orange]{border-left-color:var(--org)} .q[data-imp=green]{border-left-color:var(--grn)}
+  .qh{display:flex;align-items:flex-start;gap:10px;padding:12px 13px;cursor:pointer}
+  .qh .bm{flex:none;width:20px;height:20px;color:var(--mut);margin-top:1px}
+  .q.marked .qh .bm{color:var(--org)}
+  .qh .qt{flex:1;font-size:14.5px;font-weight:600;color:var(--tx)}
+  .qh .chev{flex:none;width:18px;height:18px;color:var(--mut);transition:transform .2s;margin-top:2px}
+  .q.open .qh .chev{transform:rotate(90deg)}
+  .qb{display:none;padding:0 13px 14px;border-top:1px solid var(--line);margin-top:-1px}
+  .q.open .qb{display:block}
+  .qb .a{font-size:14px;color:var(--tx);margin:12px 0 0}
+  .qb .meta{margin-top:11px;display:flex;flex-direction:column;gap:8px}
+  .qb .loc,.qb .say{font-size:13px;border-radius:8px;padding:8px 10px}
+  .qb .loc{background:var(--bg2);border:1px solid var(--line);color:var(--mut)}
+  .qb .loc b,.qb .say b{color:var(--acc2);font-weight:700;text-transform:uppercase;font-size:10.5px;letter-spacing:.6px;display:block;margin-bottom:2px}
+  .qb .say{background:var(--grnbg);border:1px solid rgba(77,209,122,.25);color:var(--tx)}
+  .qb ul{margin:8px 0;padding-left:18px} .qb li{margin:3px 0}
+  .hidden{display:none!important}
+  /* floating review */
+  #fab{position:fixed;right:14px;bottom:18px;z-index:150;background:var(--acc);color:#07101f;border:0;border-radius:30px;padding:12px 16px;font-size:14px;font-weight:700;box-shadow:0 6px 20px rgba(0,0,0,.45);display:flex;align-items:center;gap:7px}
+  #fab svg{width:16px;height:16px}
+  #panel{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.55);display:none}
+  #panel.show{display:block}
+  #panel .sheet{position:absolute;left:0;right:0;bottom:0;max-height:75vh;background:var(--bg2);border-top:1px solid var(--line);border-radius:18px 18px 0 0;padding:16px 14px;overflow-y:auto}
+  #panel .sheet h3{margin:0 0 12px;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+  #panel .clr{font-size:12px;color:var(--red);background:none;border:1px solid var(--line);border-radius:8px;padding:5px 9px;font-weight:600}
+  #panel .item{padding:11px 12px;background:var(--card);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;font-size:13.5px;display:flex;gap:9px;align-items:flex-start}
+  #panel .item .x{color:var(--mut);font-size:18px;flex:none;line-height:1}
+  #panel .empty{color:var(--mut);text-align:center;padding:24px 0;font-size:14px}
+  .foot{color:var(--mut);font-size:12px;text-align:center;padding:10px 0 4px}
+  .tag{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.4px;border-radius:6px;padding:1px 7px;border:1px solid var(--line);color:var(--mut);vertical-align:middle;margin-left:6px}
+  .tag.r{color:var(--red);border-color:rgba(255,93,93,.4);background:var(--redbg)}
+  .tag.o{color:var(--org);border-color:rgba(255,178,77,.4);background:var(--orgbg)}
+  .tag.g{color:var(--grn);border-color:rgba(77,209,122,.4);background:var(--grnbg)}
+  .cours{background:linear-gradient(180deg,var(--card2),var(--card));border:1px solid var(--line);border-top:3px solid var(--acc);border-radius:14px;padding:15px;margin:0 0 16px}
+  .cours .ct{display:inline-block;font-size:10.5px;font-weight:800;letter-spacing:1.2px;color:var(--acc2);background:rgba(90,162,255,.12);border:1px solid rgba(90,162,255,.3);border-radius:6px;padding:3px 9px;margin-bottom:6px}
+  .cours h4{margin:15px 0 6px;font-size:14px;color:var(--tx)}
+  .cours p{margin:7px 0;font-size:14px;color:var(--tx)}
+  .cours ul{margin:7px 0;padding-left:18px}
+  .cours li{margin:4px 0;font-size:13.8px}
+  .cours .nb{color:var(--mut);font-size:13px;font-style:italic;margin:8px 0}
+  .cours .pin{background:var(--grnbg);border:1px solid rgba(77,209,122,.28);border-radius:8px;padding:9px 11px;margin:10px 0;font-size:13.5px}
+  .cours .warn{background:var(--orgbg);border:1px solid rgba(255,178,77,.32);border-radius:8px;padding:9px 11px;margin:10px 0;font-size:13.5px}
+  .cours .danger{background:var(--redbg);border:1px solid rgba(255,93,93,.32);border-radius:8px;padding:9px 11px;margin:10px 0;font-size:13.5px}
+  .cours pre.flow{margin:8px 0}
+</style>
+</head>
+<body>
+<div id="progress"></div>
+
+<header>
+  <div class="htitle">RÉVISION DÉFENSE <span class="sub">4DOP1DR · A/B Spring/Django · Azure</span></div>
+  <div class="bar">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+      <input id="search" type="search" placeholder="Rechercher une question, un mot-clé…" autocomplete="off">
+    </div>
+    <button class="qbtn" id="quizBtn">Mode quiz</button>
+  </div>
+  <div class="legend">
+    <div class="lg" data-l="red"><span class="dot"></span>Incontournable</div>
+    <div class="lg" data-l="orange"><span class="dot"></span>Probable</div>
+    <div class="lg" data-l="green"><span class="dot"></span>Base / cours</div>
+  </div>
+</header>
+
+<nav class="toc">
+  <a href="#phrases">Phrases clés</a>
+  <a href="#flux">Schémas</a>
+  <a href="#nav">Fichiers</a>
+  <a href="#inter">Interactions</a>
+  <a href="#q13">13 questions</a>
+  <a href="#docker">Docker P1</a>
+  <a href="#compose">Compose</a>
+  <a href="#nginx">Nginx P2</a>
+  <a href="#ci">Pipeline P3/P5</a>
+  <a href="#tf">Terraform P4</a>
+  <a href="#az">Nginx Azure P6</a>
+  <a href="#hors">Hors-cours</a>
+  <a href="#base">Cours bête</a>
+  <a href="#live">Modifs live</a>
+</nav>
+
+<main>
+
+<!-- PHRASES -->
+<section id="phrases">
+  <h2 class="sec"><span class="n">1</span>Phrases incontournables</h2>
+  <div class="lead">Les réponses que le prof va presque sûrement entendre. À mémoriser mot pour mot.</div>
+
+  <div class="phrase"><div class="t">A/B testing</div><div class="p">Nginx reçoit la requête sur <code>/test</code>, son <code>upstream</code> liste mes deux apps, et il répartit en round-robin : une fois Spring Boot (version A), une fois Django (version B).</div></div>
+  <div class="phrase"><div class="t">Multi-stage (Spring)</div><div class="p">Premier <code>FROM</code> = grosse image Maven + JDK pour compiler le <code>.jar</code>. Deuxième <code>FROM</code> = petite image JRE pour l'exécuter. Je copie seulement le <code>.jar</code> avec <code>COPY --from=build</code>. Ça optimise les ressources. C'est l'exercice 4 du TD 03.</div></div>
+  <div class="phrase"><div class="t">Un seul FROM (Django)</div><div class="p">Python est interprété : pas de compilation, donc pas besoin d'image de build, un seul <code>FROM</code> suffit.</div></div>
+  <div class="phrase"><div class="t">depends_on</div><div class="p">Garantit l'ordre de démarrage, pas que l'app soit prête à répondre. Pour la disponibilité réelle il faudrait un <code>healthcheck</code> (TD 04).</div></div>
+  <div class="phrase"><div class="t">Slash de proxy_pass</div><div class="p">Le <code>/</code> final fait que nginx remplace <code>/test</code> par <code>/</code>, donc le backend reçoit sa racine. Sans le slash, il recevrait <code>/test</code> qu'il ne connaît pas → 404.</div></div>
+  <div class="phrase"><div class="t">EXPOSE</div><div class="p">Purement documentaire. Le vrai mapping de port, c'est <code>ports:</code> dans le compose. Commenter EXPOSE ne casse rien (TD 03 p.8).</div></div>
+  <div class="phrase"><div class="t">Managed Identity</div><div class="p">Mes App Services pull l'image depuis l'ACR via la Managed Identity + le rôle <code>AcrPull</code>, sans aucun secret. C'est le pattern du TD 09.</div></div>
+  <div class="phrase"><div class="t">Service Principal</div><div class="p">Un compte robot Azure pour le pipeline. Ses 4 valeurs (ARM_CLIENT_ID / SECRET / TENANT_ID / SUBSCRIPTION_ID) sont des variables masquées dans GitLab.</div></div>
+  <div class="phrase"><div class="t">Docker dans le pipeline</div><div class="p">Mon runner monte <code>/var/run/docker.sock</code>, donc mes jobs <code>docker build</code>/<code>push</code> parlent au démon Docker de l'hôte. C'est la technique « accès au démon hôte » du TD 07. PAS du Docker-in-Docker.</div></div>
+  <div class="phrase"><div class="t">SNI (P6)</div><div class="p">Azure mutualise des milliers d'apps sur les mêmes IPs. Sans SNI, nginx ne dit pas à quel domaine il veut parler pendant le handshake TLS, et la connexion échoue. D'où <code>proxy_ssl_server_name on</code>.</div></div>
+  <div class="phrase"><div class="t">PORT vs WEBSITES_PORT</div><div class="p">Le TD 08 dit explicitement d'utiliser <code>PORT</code> (et non WEBSITES_PORT). Je l'ai suivi, et mes apps répondent sur leurs URLs Azure.</div></div>
+</section>
+
+<!-- FLUX -->
+<section id="flux">
+  <h2 class="sec"><span class="n">2</span>Schémas de flux</h2>
+
+  <div class="card">
+    <h3>Flux A/B (local)</h3>
+    <pre class="flow">Navigateur
+   |  http://localhost/test
+   v
+NGINX  (conteneur, port 80)
+   |  upstream apps-ab + round-robin (choisit un serveur)
+   |  slash de proxy_pass : /test devient /
+   v
+  +----------------------+----------------------+
+  v                                             v
+spring-boot:8080/  (version A)      django:8000/  (version B)
+  \___________ alternent à chaque requête ______/
+
+Le chemin "/" ne change jamais ; c'est le serveur:port qui alterne.</pre>
+  </div>
+
+  <div class="card">
+    <h3>Flux de déploiement (pipeline → Azure)</h3>
+    <pre class="flow">git push
+   v
+PIPELINE GitLab (4 stages, séquentiels)
+   build  -> mvn compile / pip install
+   test   -> mvn test / manage.py test
+   deploy -> docker build + push  ----> ACR (registre d'images)
+   update -> az webapp restart    ----> App Services
+                                         |  pull l'image :latest
+                                         v
+                          app-spring-66045 / app-django-66045
+                          (Managed Identity + AcrPull, zéro secret)</pre>
+  </div>
+
+  <div class="card">
+    <h3>Ports (local)</h3>
+    <table class="tbl">
+      <tr><th>Service</th><th>Interne</th><th>Hôte</th><th>Accès</th></tr>
+      <tr><td>Nginx</td><td>80</td><td>80</td><td><code>localhost/test</code></td></tr>
+      <tr><td>Spring</td><td>8080</td><td>8080</td><td><code>localhost:8080</code></td></tr>
+      <tr><td>Django</td><td>8000</td><td>8000</td><td><code>localhost:8000</code></td></tr>
+    </table>
+  </div>
+</section>
+
+<!-- NAVIGATION -->
+<section id="nav">
+  <h2 class="sec"><span class="n">3</span>Quel fichier fait quoi</h2>
+  <div class="lead">On défend les fichiers qu'on a écrits. Le code des apps (Spring/Django) = fourni par l'école.</div>
+  <table class="tbl">
+    <tr><th>Fichier</th><th>Rôle</th></tr>
+    <tr><td><code>spring-boot/Dockerfile</code></td><td>Conteneurise Spring — multi-stage (Maven → JRE)</td></tr>
+    <tr><td><code>django/Dockerfile</code></td><td>Conteneurise Django — une seule étape (Python)</td></tr>
+    <tr><td><code>*/.dockerignore</code></td><td>Exclut .git, target, __pycache__… du build</td></tr>
+    <tr><td><code>docker-compose.yml</code></td><td>Orchestre les 3 conteneurs + réseau <code>ab-network</code></td></tr>
+    <tr><td><code>nginx/nginx.conf</code></td><td>upstream + route <code>/test</code> (local, HTTP)</td></tr>
+    <tr><td><code>nginx/Dockerfile</code></td><td>Image nginx custom (copie la conf)</td></tr>
+    <tr><td><code>nginx-azure/*</code></td><td>nginx vers les URLs Azure (HTTPS + SNI)</td></tr>
+    <tr><td><code>.gitlab-ci.yml</code></td><td>Pipeline : 4 stages, 8 jobs</td></tr>
+    <tr><td><code>terraform/providers.tf</code></td><td>Provider azurerm 4.66.0</td></tr>
+    <tr><td><code>terraform/variables.tf</code></td><td>9 variables (noms, région)</td></tr>
+    <tr><td><code>terraform/main.tf</code></td><td>7 ressources Azure</td></tr>
+    <tr><td><code>terraform/outputs.tf</code></td><td>3 outputs (URLs)</td></tr>
+  </table>
+</section>
+
+<!-- INTERACTIONS -->
+<section id="inter">
+  <h2 class="sec"><span class="n">4</span>Interactions</h2>
+  <table class="tbl">
+    <tr><th>Quand…</th><th>Ce qui se passe</th></tr>
+    <tr><td>User tape <code>localhost/test</code></td><td>nginx → upstream → round-robin → Spring OU Django</td></tr>
+    <tr><td>Dev <code>git push</code></td><td>GitLab détecte <code>.gitlab-ci.yml</code> → déclenche le pipeline</td></tr>
+    <tr><td><code>terraform apply</code></td><td>Crée les 7 ressources Azure</td></tr>
+    <tr><td>Stage <code>deploy</code></td><td><code>docker build</code> + <code>push</code> vers l'ACR (via démon hôte)</td></tr>
+    <tr><td>Stage <code>update</code></td><td><code>az webapp restart</code> → l'App Service re-pull l'image</td></tr>
+  </table>
+</section>
+
+<!-- 13 QUESTIONS -->
+<section id="q13">
+  <h2 class="sec"><span class="n">5</span>Les 13 questions du prof</h2>
+  <div class="lead">La liste officielle. Ce sont les plus probables — toutes en rouge ou orange.</div>
+
+  <div class="q" data-imp="red" data-kw="expliquer instruction ligne dockerfile">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q1 — Expliquer une instruction précise (Dockerfile / gitlab-ci / Terraform)</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Méthode en 3 temps pour n'importe quelle ligne : 1) qu'est-ce que c'est, 2) ce que ça fait, 3) pourquoi je l'ai mise.</div>
+    <div class="meta"><div class="say"><b>À dire</b>Ex. <code>COPY --from=build /app/target/*.jar app.jar</code> : « Je copie le .jar produit dans le stage build vers l'image finale ; <code>--from=build</code> = prends-le dans la première image. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="expose supprimer commenter port fonctionne">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q2 — Commenter EXPOSE : l'app marche encore ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><b>Oui, ça marche toujours.</b> EXPOSE est purement documentaire. Le vrai accès vient du <code>ports:</code> du compose. Le TD 03 p.8 le montre : sans <code>-p</code> ça ne marche pas, même avec EXPOSE.</div>
+    <div class="meta"><div class="loc"><b>Code</b>spring-boot/Dockerfile (EXPOSE 8080) · docker-compose.yml (ports)</div><div class="say"><b>À dire</b>« EXPOSE c'est une métadonnée, ça n'ouvre rien. Le mapping réel c'est <code>ports: "8080:8080"</code>. Donc commenter EXPOSE ne change rien. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="port django 8000 8050 changer ajustements">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q3 — Changer le port Django (8000 → 8050)</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">3 fichiers à toucher :</div><ul><li><code>django/Dockerfile</code> : <code>EXPOSE 8050</code> + <code>runserver 0.0.0.0:8050</code></li><li><code>docker-compose.yml</code> : <code>ports: "8050:8050"</code></li><li><code>nginx/nginx.conf</code> : <code>server django:8050;</code></li></ul>
+    <div class="meta"><div class="say"><b>À dire</b>« 3 endroits : le Dockerfile (le serveur), le compose (le mapping), le nginx.conf (l'upstream). Si j'en oublie un, ça pète. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="depends_on ordre demarrage disponibilite healthcheck">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q4 — depends_on : impact, pourquoi/quand l'utiliser</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Contrôle l'<b>ordre</b> de démarrage. Sans lui, nginx peut démarrer avant que Spring/Django soient lancés → premières requêtes en erreur (502). MAIS il ne garantit pas que l'app soit <b>prête à répondre</b> — juste que le conteneur est lancé. Pour la dispo réelle : <code>healthcheck</code>.</div>
+    <div class="meta"><div class="loc"><b>Code</b>docker-compose.yml (service nginx)</div><div class="say"><b>À dire</b>« depends_on garantit l'ordre, pas la disponibilité. Le 502 au démarrage le prouve : le conteneur Spring est lancé mais Spring n'a pas fini de booter. C'est exactement ce que dit le TD 04 p.11. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="sonarqube qualite code analyse pipeline">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q5 — Ajouter SonarQube au pipeline</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><b>Pas fait dans le projet</b> (honnêteté). Si je l'ajoutais : un stage <code>sonarqube</code> avec l'image <code>sonarsource/sonar-scanner-cli</code>, une variable secrète <code>SONAR_TOKEN</code>, et un serveur SonarQube. C'est le TD 06 / TD 07 p.18.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Je ne l'ai pas mis. Pour l'ajouter : nouveau stage, image sonar-scanner-cli, variable SONAR_TOKEN, sur le réseau du serveur Sonar. SonarQube remonte bugs, code smells, couverture. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="variable DEPLOY_ENV condition job production rules">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q6 — Variable DEPLOY_ENV + condition sur un job</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Définir <code>variables: DEPLOY_ENV: "staging"</code>, puis sur un job : <code>rules: - if: '$DEPLOY_ENV == "production"'</code>. Le job ne tourne que si la condition est vraie.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« J'ajoute une variable, puis une règle <code>rules: - if</code> qui teste sa valeur. La variable peut venir du yaml, des Settings GitLab, ou d'un déclenchement manuel. C'est le TD 07 (variables p.6, rules p.16). »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="pipeline tag specifique presentation declenchement conditionnel workflow">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q7 — Pipeline uniquement sur un tag spécifique</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Au niveau global : <code>workflow: rules: - if: '$CI_COMMIT_TAG == "presentation-2026"'</code>. Pousser le tag déclenche le pipeline ; un push normal ne le déclenche pas.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« <code>workflow.rules</code> conditionne tout le pipeline. <code>$CI_COMMIT_TAG</code> est injecté par GitLab sur un push de tag. C'est l'exercice du TD 07 p.16 (filtrer sur <code>^v\d+\.\d+$</code>). »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="partager image buildee entre jobs artifacts registre">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q8 — Partager une image buildée entre deux jobs</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Deux approches : (1) pousser l'image vers un registre (mon cas : l'ACR) et la pull dans l'autre job ; (2) <code>docker save</code> en .tar + <code>artifacts</code> GitLab, puis <code>docker load</code>.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« La propre : pousser vers un registre (je le fais déjà avec l'ACR). La dépannage : <code>artifacts</code> du TD 07 p.12. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="schema architecture ports mapping 5050 9090 hote conteneur">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q9 — Schéma des ports + changer un mapping (5050 → 9090)</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Le port interne du conteneur et le port hôte sont indépendants (<code>ports: "9090:5050"</code>). Attention : pour Spring, il faut aussi lui dire d'écouter sur 5050 (variable <code>SERVER_PORT=5050</code> ou <code>--server.port=5050</code>), et mettre à jour l'upstream nginx.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« <code>ports: "9090:5050"</code> = hôte 9090 → conteneur 5050. Mais Spring a son propre <code>server.port</code> : sans ça il écoute toujours 8080. Et il faut adapter le nginx.conf. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="terraform prof compte azure deployer modifications tfvars az login">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q10 — Le prof déploie ton Terraform sur SON Azure</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Rien à changer dans les <code>.tf</code>. Il doit : <code>az login</code> sur son compte, créer un <code>terraform.tfvars</code> avec ses propres noms (acr_name, app names — uniques globalement sur Azure), puis <code>terraform init</code> + <code>apply</code>.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Tout est externalisé dans les variables. Il surcharge avec un <code>terraform.tfvars</code> (les noms ACR/App Service sont uniques globalement), fait <code>az login</code>, et <code>terraform apply</code>. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="terraform ressources liste role 7 ressources azure">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q11 — Exécuter le Terraform et lister les ressources</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Commandes : <code>terraform apply</code>, <code>terraform state list</code>, <code>az resource list -g rg-abtesting-66045</code>. Les 7 ressources :</div><ul><li>Resource Group — le conteneur logique</li><li>User Assigned Identity — la Managed Identity</li><li>Container Registry — stocke les images</li><li>Role Assignment AcrPull — droit de pull</li><li>Service Plan (Linux B1) — la capacité CPU/RAM</li><li>2× Linux Web App — les apps Spring + Django</li></ul>
+    <div class="meta"><div class="loc"><b>Code</b>terraform/main.tf</div><div class="say"><b>À dire</b>« 7 ressources : RG, Identity, ACR, Role Assignment, Service Plan, 2 App Services. Chacune a un rôle précis, aucune de trop. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="suffixe ESI nom image dockerfile pipeline terraform">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q12 — Ajouter le suffixe -ESI à toutes les images</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">3 fichiers : <code>.gitlab-ci.yml</code> (le <code>docker build -t …-ESI</code>), <code>terraform/variables.tf</code> (<code>spring_image</code>/<code>django_image</code>), et optionnellement <code>docker-compose.yml</code>. PAS le Dockerfile (le nom est passé au <code>build</code>, pas écrit dedans).</div>
+    <div class="meta"><div class="say"><b>À dire</b>« 3 fichiers : pipeline (build/push), Terraform (où l'App Service pull), compose pour le local. Le Dockerfile ne change pas. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="dockerignore supprimer arborescence conteneur git copie">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Q13 — Supprimer un .dockerignore et explorer le conteneur</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><code>rm django/.dockerignore</code> → rebuild → <code>docker exec -it app-django sh</code> → <code>ls -la /app</code> : on voit <code>.git/</code> (énorme), <code>.idea/</code>, <code>db.sqlite3</code>, <code>__pycache__/</code>. Importance : taille de l'image, sécurité (historique git = fuite possible), reproductibilité.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Sans .dockerignore, <code>COPY . .</code> embarque tout, y compris le .git. 3 raisons de l'avoir : taille, sécurité (leak via l'historique), reproductibilité. »</div></div></div>
+  </div>
+</section>
+
+<!-- DOCKER P1 -->
+<section id="docker">
+  <h2 class="sec"><span class="n">6</span>Docker &amp; Dockerfiles — P1</h2>
+
+  <div class="cours">
+    <span class="ct">LE COURS</span>
+    <h4>Le vocabulaire (mots exacts du TD 03)</h4>
+    <ul>
+      <li><b>Image</b> : un modèle qui contient tout ce dont l'app a besoin pour s'exécuter (code, libs, dépendances). (TD 03 p.2)</li>
+      <li><b>Conteneur</b> : une instance en cours d'exécution d'une image. (p.3)</li>
+      <li><b>Dockerfile</b> : un fichier texte d'instructions pour construire une image. (p.6)</li>
+    </ul>
+    <h4>Dockerfile Spring = multi-stage (deux FROM)</h4>
+    <p>C'est l'exercice 4 du TD 03. Idée : compiler dans une grosse image, exécuter dans une petite.</p>
+    <ul>
+      <li><b>1er FROM</b> (<code>maven:...</code>) : a Maven + le JDK → compile le <code>.jar</code>. = "l'image pour la compilation".</li>
+      <li><b>2e FROM</b> (<code>...jre-alpine</code>) : juste la JRE → exécute. = "l'image pour l'exécution", c'est elle l'image finale.</li>
+      <li>Entre les deux : <code>COPY --from=build</code> copie SEULEMENT le <code>.jar</code>.</li>
+    </ul>
+    <div class="pin">À dire : « 1ère image = compiler, 2e image = exécuter. Je copie juste le .jar. L'image finale est légère, sans les outils de build. Ça optimise les ressources. »</div>
+    <h4>Dockerfile Django = un seul FROM</h4>
+    <p>Python est interprété : pas de compilation, donc pas besoin d'image de build. Juste l'interpréteur + les dépendances + le code.</p>
+    <div class="pin">Mémo : Java compilé → multi-stage. Python interprété → un seul FROM.</div>
+    <h4>Les directives (toutes du TD 03 p.6-7)</h4>
+    <p><code>FROM</code> (image de base), <code>WORKDIR</code> (dossier courant), <code>COPY</code> (ajoute des fichiers), <code>RUN</code> (exécute pendant le build), <code>LABEL</code> (métadonnée = mon matricule), <code>EXPOSE</code> (documente un port), <code>CMD</code> (commande au démarrage).</p>
+    <div class="warn">EXPOSE est purement documentaire : il n'ouvre rien. Le vrai mapping, c'est <code>ports:</code> dans le compose (TD 03 p.8).</div>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="multistage deux from compiler executer jar optimiser">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi deux FROM dans le Dockerfile Spring ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Multi-stage build (TD 03 ex.4). Le 1er FROM (Maven+JDK) compile le .jar ; le 2e (JRE alpine) l'exécute. On copie juste le .jar entre les deux. L'image finale est légère et plus sûre (pas d'outils de build).</div>
+    <div class="meta"><div class="loc"><b>Code</b>spring-boot/Dockerfile</div><div class="say"><b>À dire</b>« 1ère image = compiler, 2e image = exécuter. Je copie le .jar avec <code>COPY --from=build</code>. Ça optimise les ressources. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="dskiptests tests pipeline build">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi -DskipTests dans le build de l'image ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Pour ne pas jouer les tests pendant la construction de l'image : ils tournent dans le pipeline CI (Partie 3). Ça accélère le build et évite de les jouer deux fois.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Je saute les tests ici, ils sont dans le pipeline P3. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="django un seul from python interprete compile">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi le Dockerfile Django n'a qu'un seul FROM ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Python est interprété, il n'y a pas d'étape de compilation. J'ai juste besoin de l'interpréteur + les dépendances + le code. Un multi-stage n'apporterait rien.</div>
+    <div class="meta"><div class="loc"><b>Code</b>django/Dockerfile</div><div class="say"><b>À dire</b>« Java compilé → multi-stage. Python interprété → un seul FROM. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="label author matricule metadonnee">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">À quoi sert LABEL author="66045" ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">C'est une métadonnée de l'image (mon matricule = signature). Visible via <code>docker inspect</code>. Le TD 03 p.7 le montre avec <code>LABEL author="g12345"</code>.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Ma signature dans l'image, visible avec <code>docker inspect</code>. »</div></div></div>
+  </div>
+</section>
+
+<!-- COMPOSE -->
+<section id="compose">
+  <h2 class="sec"><span class="n">7</span>Docker Compose</h2>
+
+  <div class="cours">
+    <span class="ct">LE COURS</span>
+    <p>Le <code>docker-compose.yml</code> lance mes 3 conteneurs d'un coup et les met sur un réseau commun. C'est ce que fait <code>docker compose up</code>.</p>
+    <h4>Les clés (toutes définies TD 04 p.11)</h4>
+    <ul>
+      <li><code>services</code> : mes 3 conteneurs.</li>
+      <li><code>build: ./spring-boot</code> : construit l'image depuis ce Dockerfile.</li>
+      <li><code>container_name</code> : nom fixe du conteneur.</li>
+      <li><code>ports: "8080:8080"</code> : mapping hôte → conteneur.</li>
+      <li><code>networks</code> : rattache au réseau partagé <code>ab-network</code>.</li>
+      <li><code>depends_on</code> : ordre de démarrage.</li>
+    </ul>
+    <h4>Le réseau bridge + DNS interne</h4>
+    <p>Grâce au réseau <code>ab-network</code> (driver <code>bridge</code>), nginx joint <code>spring-boot</code> et <code>django</code> par leur nom — c'est le DNS interne de Docker. Sans réseau commun, nginx ne pourrait pas les résoudre.</p>
+    <h4>depends_on : LA nuance (Question 4)</h4>
+    <p>Il garantit l'ORDRE de démarrage (nginx après les apps), MAIS pas que l'app soit PRÊTE à répondre — juste que son conteneur est lancé.</p>
+    <div class="warn"><b>Démarré ≠ prêt :</b> au démarrage on peut avoir un 502, le temps que Spring finisse de booter (~10-30 s). Le conteneur est lancé, mais Spring n'écoute pas encore. Pour la vraie disponibilité : un <code>healthcheck</code> (TD 04 p.11, mot pour mot).</div>
+    <div class="nb">Mots-clés fixes (services, ports, depends_on…) = le langage compose, pas renommables. Noms que j'ai choisis (spring-boot, ab-network) = renommables, mais à répercuter partout (ex. l'upstream nginx).</div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="reseau bridge dns interne resolution nom service">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Comment nginx trouve-t-il spring-boot et django ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Via le DNS interne du réseau Docker partagé <code>ab-network</code>. Les conteneurs sur le même réseau bridge se joignent par leur nom de service. Sans réseau commun, nginx ne pourrait pas les résoudre.</div>
+    <div class="meta"><div class="loc"><b>Code</b>docker-compose.yml + nginx.conf (server spring-boot:8080)</div><div class="say"><b>À dire</b>« Le DNS interne de Docker résout les noms de services sur le réseau bridge partagé. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="bridge driver reseau isole">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">C'est quoi driver: bridge ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Le driver réseau par défaut. Les conteneurs connectés se parlent entre eux, mais ne sont pas accessibles de l'extérieur sauf via les ports explicitement mappés (TD 04 p.12).</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Réseau virtuel isolé ; communication interne, accès externe seulement via les ports mappés. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="mots cles fixes noms choisis renommer references">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Quels mots peux-tu renommer dans le compose ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Les <b>mots-clés</b> (services, build, ports, depends_on, networks, driver…) sont fixes — c'est le langage docker-compose (listés TD 04 p.11). Les <b>noms que j'ai choisis</b> (services spring-boot/django/nginx, le réseau ab-network) sont renommables, mais il faut répercuter partout (ex. l'upstream nginx).</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Mot-clé = fixe. Nom que j'ai inventé = renommable, mais je dois changer toutes ses références. »</div></div></div>
+  </div>
+</section>
+
+<!-- NGINX -->
+<section id="nginx">
+  <h2 class="sec"><span class="n">8</span>Nginx local — P2</h2>
+
+  <div class="cours">
+    <span class="ct">LE COURS</span>
+    <p>Nginx est le reverse proxy qui fait l'A/B testing — celui que tu vois alterner Spring/Django quand tu rafraîchis <code>localhost/test</code>.</p>
+    <h4>upstream + round-robin</h4>
+    <p>L'<code>upstream apps-ab</code> liste mes 2 apps. Quand un upstream a plusieurs <code>server</code>, nginx ALTERNE par défaut : requête 1 → Spring, requête 2 → Django… C'est ça l'A/B, rien de codé en plus.</p>
+    <div class="nb">"round-robin" n'est pas écrit dans le TD 05 (le comportement y est montré) ; il est dans mon commentaire de code. Je peux dire "nginx alterne entre les serveurs".</div>
+    <h4>Le slash de proxy_pass (LE détail)</h4>
+    <p>Il y a 2 sauts : (1) toi → nginx (<code>localhost/test</code>), (2) nginx → backend.</p>
+    <ul>
+      <li>AVEC le slash (<code>proxy_pass http://apps-ab/</code>) : nginx remplace <code>/test</code> par <code>/</code> → le backend reçoit sa racine → la page existe.</li>
+      <li>SANS le slash : le backend reçoit <code>/test</code> → 404 (mes apps n'ont pas de route /test).</li>
+    </ul>
+    <p>La substitution est <b>automatique</b> (nginx), déclenchée par le slash. <code>location /test</code> = ce qui est remplacé ; le chemin du <code>proxy_pass</code> = par quoi.</p>
+    <div class="pin">2 décisions par requête : le <b>chemin</b> (toujours <code>/</code>, via le slash) + le <b>serveur:port</b> (8080 ou 8000, via le round-robin). nginx envoie à <code>spring-boot:8080/</code> OU <code>django:8000/</code>, en alternance. Le / est constant, le port alterne — c'est ça l'A/B.</div>
+    <div class="nb">Nginx fait un <b>reverse proxy</b>, pas une "redirection" HTTP (ton URL reste <code>localhost/test</code>). Dire "il route / proxifie vers", pas "il redirige". Et <code>/test</code> est imposé par la consigne P2.</div>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="upstream round robin alterne reparti 50 50">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Comment se fait le round-robin / l'A/B ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Quand un <code>upstream</code> a plusieurs <code>server</code>, nginx alterne par défaut : requête 1 → Spring, requête 2 → Django, etc. Rien de codé en plus.</div>
+    <div class="meta"><div class="loc"><b>Code</b>nginx/nginx.conf (upstream apps-ab)</div><div class="say"><b>À dire</b>« Comportement par défaut de l'upstream. Le mot "round-robin" n'est pas dans le TD mais le comportement y est montré ; je peux dire "nginx alterne entre les serveurs". »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="trailing slash proxy_pass remplace test racine 404">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Le rôle du slash final de proxy_pass</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Avec <code>proxy_pass http://apps-ab/</code> (slash), nginx remplace <code>/test</code> par <code>/</code> → le backend reçoit sa racine. Sans le slash, il reçoit <code>/test</code> → 404. La substitution est automatique : nginx remplace ce que matche le <code>location</code> par le chemin du <code>proxy_pass</code>.</div>
+    <div class="meta"><div class="loc"><b>Code</b>nginx/nginx.conf (location /test)</div><div class="say"><b>À dire</b>« Le slash fait que nginx remplace <code>/test</code> par <code>/</code>. Mes apps répondent sur <code>/</code>, pas sur <code>/test</code>. Sans le slash → 404. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="underscore apps_ab 400 bad request tomcat host header rfc">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Anecdote : l'underscore (400 Bad Request)</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Au début l'upstream s'appelait <code>apps_ab</code> avec underscore → 400. Nginx met le nom de l'upstream dans le header Host, et Tomcat refuse les underscores (RFC). Renommé <code>apps-ab</code> → réglé.</div>
+    <div class="meta"><div class="say"><b>À dire</b>Montre que j'ai débogué du vrai. « Underscore interdit dans un nom d'hôte, j'ai mis un tiret. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="dockerfile nginx volume consigne personnalise">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi un Dockerfile nginx et pas un volume (comme le TD) ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Le TD 05 monte la conf en volume, mais la consigne P2 demande explicitement « créer un Dockerfile Nginx personnalisé ». La consigne prime.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« La consigne P2 exige un Dockerfile nginx perso. »</div></div></div>
+  </div>
+</section>
+
+<!-- CI -->
+<section id="ci">
+  <h2 class="sec"><span class="n">9</span>Pipeline — P3 &amp; P5</h2>
+
+  <div class="cours">
+    <span class="ct">LE COURS</span>
+    <h4>Tag ≠ pipeline (important)</h4>
+    <ul>
+      <li><b>Tag</b> = marqueur git posé sur un commit. J'en ai 6, un par partie. Ils prouvent que les 6 parties sont livrées. C'est ce que le prof récupère.</li>
+      <li><b>Pipeline</b> = l'exécution automatique du CI/CD déclenchée à chaque push. Il enchaîne des jobs.</li>
+    </ul>
+    <h4>Le vocabulaire (TD 07)</h4>
+    <ul>
+      <li><b>Stage</b> : une étape (séquentielles).</li>
+      <li><b>Job</b> : une tâche dans un stage.</li>
+      <li><b>Runner</b> : le conteneur Docker chez moi qui exécute les jobs.</li>
+    </ul>
+    <h4>Mon fichier : 4 stages, 8 jobs</h4>
+    <pre class="flow">build   -+
+test    -+  Partie 3 (CI : compiler + tester)
+deploy  -+
+update  -+  Partie 5 (déployer sur Azure)</pre>
+    <h4>P3 — build &amp; test</h4>
+    <p><code>build-spring</code> (image maven, <code>mvn compile</code>), <code>build-django</code> (image python, <code>pip install</code>). Puis <code>test-spring</code> (<code>mvn test</code>), <code>test-django</code> (<code>manage.py test</code>). Chaque job précise son <code>image:</code> (l'environnement) et son <code>stage:</code>. <code>build</code> doit réussir avant <code>test</code>.</p>
+    <h4>P5 — deploy &amp; update</h4>
+    <p><b>deploy</b> (image <code>docker:latest</code>) : <code>docker login</code> à l'ACR avec le Service Principal (<code>--password</code>, forme consigne), puis <code>docker build</code> + <code>docker push</code>.</p>
+    <div class="danger"><b>Technique = accès au démon HÔTE via <code>docker.sock</code> (monté dans le runner), PAS dind.</b> Mon fichier n'a PAS de <code>services: docker:dind</code>. Ne jamais dire "dind" → dire "accès au démon hôte" (TD 07 p.20-22).</div>
+    <p><b>update</b> (image <code>azure-cli</code>) : <code>az login --service-principal</code> puis <code>az webapp restart</code> → l'App Service re-pull l'image fraîche.</p>
+    <h4>Le runner</h4>
+    <p>Un conteneur Docker chez moi, enregistré au projet via un token. Pour chaque job il lance un conteneur frais de l'image du job. Enregistré avec <code>--docker-volumes /var/run/docker.sock</code> pour que les jobs deploy parlent au démon Docker de l'hôte.</p>
+    <div class="nb">Anecdote : 1er pipeline failed à cause du bug Git Bash // (docker.sock converti en chemin Windows). Corrigé config.toml à la main = piège du TD 07 p.21.</div>
+    <h4>Les variables (Masked)</h4>
+    <p><code>$ACR_NAME</code>, <code>$ARM_CLIENT_ID/SECRET/TENANT_ID/SUBSCRIPTION_ID</code> → GitLab Settings &gt; CI/CD &gt; Variables, cachées dans les logs.</p>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="pipeline stage job runner definition difference tag">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Vocabulaire : pipeline, stage, job, runner, tag</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><b>Pipeline</b> = processus auto déclenché au push. <b>Stage</b> = étape (séquentielles). <b>Job</b> = tâche dans un stage. <b>Runner</b> = le conteneur Docker chez moi qui exécute les jobs. <b>Tag</b> = marqueur git (j'en ai 6, un par partie) — différent du pipeline.</div>
+    <div class="meta"><div class="loc"><b>Code</b>.gitlab-ci.yml</div><div class="say"><b>À dire</b>« 4 stages, 8 jobs. build/test = P3, deploy/update = P5. Le tag prouve une partie livrée ; le pipeline est l'exécution du CI. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="docker sock demon hote dind build push runner">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Comment le job fait docker build/push ? (dind ou pas ?)</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><b>PAS dind.</b> Mon runner est enregistré avec <code>--docker-volumes /var/run/docker.sock:/var/run/docker.sock</code>. Le job tourne dans <code>image: docker:latest</code> (qui a la CLI) et parle au démon Docker de l'hôte via le socket. C'est la technique « accès au démon hôte » du TD 07 p.20-22.</div>
+    <div class="meta"><div class="loc"><b>Code</b>.gitlab-ci.yml (push-spring/push-django)</div><div class="say"><b>À dire</b>« Accès au démon hôte via le docker.sock monté dans le runner. Pas de <code>services: docker:dind</code> dans mon fichier. Conséquence : l'image est visible avec <code>docker image ls</code> sur ma machine. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="docker login password acr service principal authentification">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Comment le pipeline se connecte à l'ACR ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><code>docker login "$ACR_NAME.azurecr.io" -u "$ARM_CLIENT_ID" --password "$ARM_CLIENT_SECRET"</code> : il se logge avec le Service Principal. ACR accepte parce que le SP a les droits. <code>--password</code> en direct = forme de la consigne ; le secret est une variable masquée.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Je me logge à l'ACR avec le Service Principal. <code>--password</code> via la variable masquée, comme la consigne. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="az webapp restart update pull image latest">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi un az webapp restart dans le stage update ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Pour que l'App Service re-pull la dernière image <code>:latest</code> depuis l'ACR. Le job se connecte avec <code>az login --service-principal</code> puis <code>az webapp restart</code>.</div>
+    <div class="meta"><div class="loc"><b>Code</b>.gitlab-ci.yml (update-spring/update-django)</div><div class="say"><b>À dire</b>« Le restart force l'App Service à re-pull l'image fraîche. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="variables masked protected ci secrets arm">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Où sont les secrets du pipeline ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Dans GitLab Settings → CI/CD → Variables : <code>ARM_CLIENT_ID</code>, <code>ARM_CLIENT_SECRET</code>, <code>ARM_TENANT_ID</code>, <code>ARM_SUBSCRIPTION_ID</code>, <code>ACR_NAME</code>. En <b>Masked</b> (cachées dans les logs). Le repo ne contient que des références <code>$VAR</code>.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Les secrets sont dans les variables GitLab, masquées. Le code ne contient aucun secret en clair. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="git bash double slash docker sock anecdote config toml bug">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Anecdote : le bug Git Bash // au setup du runner</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Le 1er pipeline a échoué : Git Bash a converti <code>/var/run/docker.sock</code> en chemin Windows + remplacé <code>:</code> par <code>;</code>. J'ai corrigé <code>config.toml</code> à la main. C'est pile le piège « SOUS WINDOWS - GIT BASH ET // » du TD 07 p.21.</div>
+    <div class="meta"><div class="say"><b>À dire</b>Anecdote de vrai debug : « Git Bash ajuste les chemins qui commencent par <code>/</code>, d'où le <code>//</code> dans les commandes du TD. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="deux pipelines push tag branche double declenchement">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi 2 pipelines sur un push avec tag ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">GitLab déclenche un pipeline par référence : un pour la branche, un pour le tag. Comportement par défaut. Pour n'en avoir qu'un : une règle <code>workflow</code>.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Un pipeline par référence (branche + tag). Normal. On le filtrerait avec workflow.rules. »</div></div></div>
+  </div>
+</section>
+
+<!-- TERRAFORM -->
+<section id="tf">
+  <h2 class="sec"><span class="n">10</span>Terraform / Azure — P4</h2>
+
+  <div class="cours">
+    <span class="ct">LE COURS</span>
+    <p>Terraform décrit mon infra Azure en code. 4 fichiers, 7 ressources. Je le lance <b>à la main</b> (la consigne P4 interdit de l'automatiser dans le pipeline).</p>
+    <h4>providers.tf</h4>
+    <p>Fixe le provider <code>azurerm</code> en 4.66.0 (TD 09 p.16). Bloc <code>provider "azurerm" { features {} }</code> vide, sans <code>subscription_id</code> : Terraform lit les variables d'env <code>ARM_*</code> (ou ma session <code>az login</code>). Aucun secret dans le fichier.</p>
+    <h4>variables.tf</h4>
+    <p>9 variables (location francecentral, noms des ressources, tags d'images), toutes avec <code>default</code>. Que des noms, aucun secret.</p>
+    <h4>main.tf — les 7 ressources</h4>
+    <ul>
+      <li><b>resource_group</b> : le conteneur logique de tout.</li>
+      <li><b>user_assigned_identity</b> : la Managed Identity des App Services.</li>
+      <li><b>container_registry</b> : stocke mes images.</li>
+      <li><b>role_assignment AcrPull</b> : droit pour l'identité de pull depuis l'ACR.</li>
+      <li><b>service_plan</b> (Linux B1) : la capacité CPU/RAM, mutualisée.</li>
+      <li><b>2× linux_web_app</b> : Spring + Django, en conteneur.</li>
+    </ul>
+    <div class="pin">Lien zéro-secret : mes App Services pull l'image via la Managed Identity + AcrPull + <code>container_registry_use_managed_identity = true</code>. Pas de mot de passe. Pattern du TD 09 p.17/20.</div>
+    <h4>outputs.tf</h4>
+    <p>3 outputs : l'URL de l'ACR + les 2 URLs des apps.</p>
+    <div class="warn"><b>PORT vs WEBSITES_PORT :</b> j'utilise <code>PORT</code> (TD 08 p.4 dit "PORT et non WEBSITES_PORT"). L'exemple Terraform du TD 09 utilise encore WEBSITES_PORT — les 2 TDs divergent, j'ai suivi le plus explicite, et ça marche.</div>
+    <p>Commandes : <code>terraform init</code> → <code>plan</code> → <code>apply</code> → <code>destroy</code>. <code>state list</code> liste les ressources.</p>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="managed identity acrpull role assignment pull image secret">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Comment l'App Service pull l'image sans secret ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Via la <b>Managed Identity</b> (user-assigned) qui a le rôle <b>AcrPull</b> sur l'ACR, plus <code>container_registry_use_managed_identity = true</code> sur la web app. Aucun mot de passe transporté. C'est le pattern du TD 09 p.17/20.</div>
+    <div class="meta"><div class="loc"><b>Code</b>terraform/main.tf (identity, role_assignment, web app)</div><div class="say"><b>À dire</b>« Managed Identity + rôle AcrPull = l'App Service pull l'image sans secret. Pattern du TD 09. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="provider azurerm subscription features auth env arm">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi le provider azurerm est vide (features {}) ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Pas de <code>subscription_id</code> dans le provider : Terraform lit les variables d'environnement <code>ARM_*</code> (ou ma session <code>az login</code>). Ça garde le fichier committable, sans secret. Version pinée 4.66.0 comme le TD 09 p.16.</div>
+    <div class="meta"><div class="loc"><b>Code</b>terraform/providers.tf</div><div class="say"><b>À dire</b>« Provider vide ; l'auth vient des variables ARM_* / az login. Aucun secret dans le .tf. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="port websites_port app settings azure td08 td09">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">PORT ou WEBSITES_PORT ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">J'utilise <code>PORT</code>. Le TD 08 p.4 dit explicitement <code>PORT</code> (et non WEBSITES_PORT) ; l'exemple Terraform du TD 09 utilise encore WEBSITES_PORT. J'ai suivi l'instruction la plus explicite (TD 08) et ça marche.</div>
+    <div class="meta"><div class="loc"><b>Code</b>terraform/main.tf (app_settings)</div><div class="say"><b>À dire</b>« J'ai repéré que les 2 TDs divergent ; j'ai suivi le TD 08 (PORT), et mes apps répondent. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="terraform commandes init plan apply destroy state list">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Les commandes Terraform</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><code>terraform init</code> (1×) → <code>plan</code> (vérifier) → <code>apply</code> (créer) → <code>destroy</code> (supprimer). <code>terraform state list</code> liste les ressources gérées.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« init une fois, puis plan, apply, et destroy pour libérer les crédits. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="p4 manuel pipeline consigne pas automatiser">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi le Terraform n'est pas dans le pipeline ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">La consigne P4 dit qu'aucun job du pipeline ne doit automatiser cette étape. Je lance <code>terraform apply</code> à la main.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« La consigne demande de le faire manuellement, pas via le pipeline. »</div></div></div>
+  </div>
+</section>
+
+<!-- AZURE NGINX -->
+<section id="az">
+  <h2 class="sec"><span class="n">11</span>Nginx Azure — P6</h2>
+
+  <div class="cours">
+    <span class="ct">LE COURS</span>
+    <p>Un 2e nginx, séparé du premier. Même principe (router <code>/test</code> en A/B), mais vers mes apps Azure (URLs publiques HTTPS) au lieu des conteneurs locaux. Le Dockerfile est identique à celui de la P2 ; la différence est dans le <code>nginx.conf</code>.</p>
+    <h4>Les différences avec la P2</h4>
+    <ul>
+      <li>Cible : URLs Azure (<code>app-spring-66045.azurewebsites.net:443</code>) au lieu de conteneurs locaux.</li>
+      <li>Protocole : <code>proxy_pass https://</code> (pas http) ; port 443.</li>
+      <li>SSL : <code>proxy_ssl_server_name on</code> + <code>proxy_ssl_name $proxy_host</code>.</li>
+    </ul>
+    <h4>Le SNI (mon apport — pas vu en cours)</h4>
+    <p>Azure App Service mutualise des milliers d'apps sur les mêmes IPs publiques. Pendant le handshake TLS, nginx doit indiquer le nom de domaine — c'est le SNI (Server Name Indication) — sinon Azure ne sait pas quel certificat/app servir et la connexion échoue. <code>proxy_ssl_server_name on</code> active l'envoi du SNI.</p>
+    <div class="danger">Le SNI est ABSENT du TD 05 et du TD 08. À NE PAS sortir de moi-même. Si on me pousse : justifier par la mutualisation des IPs Azure + le TD 05 qui invite à consulter la doc pour le HTTPS.</div>
+    <h4>Honnêteté (le Host header)</h4>
+    <p>Avec un upstream multi-serveurs, le Host header par défaut est le nom de l'upstream, qu'Azure ne reconnaît pas. Mon A/B marche en local ; pour Azure la gestion fine du Host header serait à affiner. Alternative native : Azure Front Door (note de la consigne P6).</p>
+  </div>
+
+  <div class="q" data-imp="red" data-kw="sni proxy ssl server name azure mutualise handshake tls certificat">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">C'est quoi le SNI et pourquoi proxy_ssl_server_name on ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Azure App Service mutualise des milliers d'apps sur les mêmes IPs. Pendant le handshake TLS, nginx doit indiquer le nom de domaine (le SNI) sinon Azure ne sait pas quel certificat/app servir → échec. <code>proxy_ssl_server_name on</code> active l'envoi du SNI.</div>
+    <div class="meta"><div class="loc"><b>Code</b>nginx-azure/nginx.conf</div><div class="say"><b>À dire</b>(c'est MON apport, pas le cours) « Sans SNI, Azure ne sait pas quelle app je vise sur l'IP partagée. Le TD 05 m'invitait à consulter la doc pour le HTTPS. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="difference nginx local azure https 443 http">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Différence avec le nginx de la P2 ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Même structure, cible différente : la P2 route vers des conteneurs locaux en HTTP (<code>:8080</code>/<code>:8000</code>) ; la P6 route vers des URLs Azure publiques en HTTPS (<code>:443</code>) avec <code>proxy_pass https://</code> + SNI.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« 2 nginx pour 2 usages : local HTTP vs Azure HTTPS. La différence est la gestion SSL/SNI. »</div></div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="azure front door alternative native routing">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Une alternative native côté Azure ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Azure Front Door (mentionné dans la note de la consigne P6) — le service natif de routing / load balancing global.</div>
+    <div class="meta"><div class="say"><b>À dire</b>« Pour aller plus loin, Azure Front Door ferait ce routing nativement. »</div></div></div>
+  </div>
+</section>
+
+<!-- HORS COURS -->
+<section id="hors">
+  <h2 class="sec"><span class="n">12</span>Hors-cours à défendre</h2>
+  <div class="lead">Ce qui dépasse les TDs. À présenter comme mon apport — surtout ne pas dire « vu en cours » sur le SNI.</div>
+
+  <div class="q" data-imp="red" data-kw="sni hors cours apport perso ne pas sortir">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">SNI / proxy_ssl_server_name (le seul vrai hors-cours)</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Absent du TD 05 et du TD 08. À ne PAS sortir de moi-même. Si on me pousse : justifier par la mutualisation des IPs Azure + l'invitation du TD 05 à consulter la doc HTTPS.</div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="django python pip vu cours td06 td07 consigne">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Python/Django, c'est hors-cours ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Non. Python + pip sont vus (TD 06 enseigne un projet Python venv/pip ; TD 07 a un job <code>python:3.8</code>). Seul le framework Django est consigne-only — et la consigne spécifie même <code>runserver 0.0.0.0:8000</code>.</div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="multistage dind cours td03 td07 vu">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Le multi-stage et le docker.sock, c'est hors-cours ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Non, les deux sont dans les TDs. Multi-stage = TD 03 ex.4. Accès au démon hôte via docker.sock = TD 07 p.20-22. Rien d'exotique.</div></div>
+  </div>
+</section>
+
+<!-- COURS BETE -->
+<section id="base">
+  <h2 class="sec"><span class="n">13</span>Cours bête (basiques)</h2>
+
+  <div class="q" data-imp="green" data-kw="image conteneur difference modele instance">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Image vs conteneur ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Une <b>image</b> est un modèle qui contient tout ce dont l'app a besoin (TD 03 p.2). Un <b>conteneur</b> est une instance en cours d'exécution d'une image (TD 03 p.3).</div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="dockerfile definition fichier instructions">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">C'est quoi un Dockerfile ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Un fichier texte qui contient une série d'instructions pour construire une image (TD 03 p.6).</div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="entrypoint cmd difference arguments">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">ENTRYPOINT vs CMD ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">ENTRYPOINT = le programme principal qui s'exécute toujours. CMD = des arguments par défaut, remplaçables si on en passe à <code>docker run</code> (TD 04 p.4). Mes Dockerfiles utilisent CMD.</div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="stage job parallele sequentiel">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Stages séquentiels ou parallèles ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Les stages s'exécutent en séquence ; les jobs d'un même stage en parallèle (si plusieurs runners). TD 07 p.10-12.</div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="alpine image legere taille">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Pourquoi des images alpine ?</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Alpine = distribution Linux minimale → images légères. C'est une bonne pratique d'optimisation de la taille (TD 04 p.5).</div></div>
+  </div>
+</section>
+
+<!-- LIVE -->
+<section id="live">
+  <h2 class="sec"><span class="n">14</span>Modifs en direct — où aller</h2>
+
+  <div class="q" data-imp="orange" data-kw="changer port django live 3 fichiers">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Changer un port</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Dockerfile (EXPOSE + la commande de lancement) → docker-compose.yml (ports) → nginx.conf (upstream). Pour Spring, aussi <code>server.port</code>.</div></div>
+  </div>
+
+  <div class="q" data-imp="green" data-kw="commenter expose rebuild test marche">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Commenter EXPOSE</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Dans le Dockerfile, commenter la ligne <code>EXPOSE</code>, <code>docker compose up --build</code>, tester : ça marche toujours (le mapping vient de <code>ports:</code>).</div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="ajouter enlever depends_on live demarrage">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Ajouter/enlever depends_on</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a">Commenter/décommenter les 3 lignes <code>depends_on</code> du service nginx dans le compose, relancer, expliquer (ordre ≠ disponibilité).</div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="suffixe esi images build pipeline terraform">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Suffixe -ESI sur les images</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><code>.gitlab-ci.yml</code> (le <code>-t …-ESI</code>) + <code>terraform/variables.tf</code> (spring_image/django_image) + optionnel le compose. Pas le Dockerfile.</div></div>
+  </div>
+
+  <div class="q" data-imp="orange" data-kw="supprimer dockerignore explorer conteneur git">
+    <div class="qh"><span class="bm bmk"></span><span class="qt">Supprimer un .dockerignore</span><span class="chev cv"></span></div>
+    <div class="qb"><div class="a"><code>rm django/.dockerignore</code> → rebuild → <code>docker exec -it app-django sh</code> → <code>ls -la /app</code> (on voit .git, .idea…). Restaurer avec <code>git checkout</code>.</div></div>
+  </div>
+</section>
+
+<div class="foot">Révision DEVOPS 4DOP1DR — matricule 66045. Tout est hors dépôt, usage perso.</div>
+</main>
+
+<button id="fab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg><span id="fabn">À revoir (0)</span></button>
+
+<div id="panel">
+  <div class="sheet">
+    <h3>À revoir <button class="clr" id="clrAll">Tout effacer</button></h3>
+    <div id="panelList"></div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  var BM_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12v18l-6-4-6 4z"/></svg>';
+  var CV_SVG='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M9 6l6 6-6 6"/></svg>';
+
+  // inject icons + ids
+  var qs=document.querySelectorAll('.q');
+  qs.forEach(function(q,i){
+    q.id=q.id||('q'+(i+1));
+    var bm=q.querySelector('.bmk'); if(bm) bm.innerHTML=BM_SVG;
+    var cv=q.querySelector('.cv'); if(cv) cv.innerHTML=CV_SVG;
+  });
+
+  // ---- collapse / expand ----
+  document.querySelectorAll('.qh').forEach(function(h){
+    h.addEventListener('click',function(e){
+      if(e.target.closest('.bm')) return; // bookmark handled separately
+      h.parentElement.classList.toggle('open');
+    });
+  });
+
+  // ---- bookmark ----
+  var KEY='devops_review_marks';
+  var marks=[]; try{marks=JSON.parse(localStorage.getItem(KEY))||[];}catch(e){marks=[];}
+  function saveMarks(){try{localStorage.setItem(KEY,JSON.stringify(marks));}catch(e){}}
+  function applyMarks(){
+    document.querySelectorAll('.q').forEach(function(q){
+      q.classList.toggle('marked',marks.indexOf(q.id)>=0);
+    });
+    document.getElementById('fabn').textContent='À revoir ('+marks.length+')';
+  }
+  document.querySelectorAll('.bm').forEach(function(b){
+    b.addEventListener('click',function(e){
+      e.stopPropagation();
+      var q=b.closest('.q'); var id=q.id; var k=marks.indexOf(id);
+      if(k>=0) marks.splice(k,1); else marks.push(id);
+      saveMarks(); applyMarks(); if(panel.classList.contains('show')) renderPanel();
+    });
+  });
+  applyMarks();
+
+  // ---- review panel ----
+  var fab=document.getElementById('fab'), panel=document.getElementById('panel'),
+      panelList=document.getElementById('panelList');
+  function renderPanel(){
+    if(!marks.length){panelList.innerHTML='<div class="empty">Aucune question marquée.<br>Touche l\'icône marque-page à gauche d\'une question.</div>';return;}
+    panelList.innerHTML='';
+    marks.forEach(function(id){
+      var q=document.getElementById(id); if(!q)return;
+      var t=q.querySelector('.qt').textContent;
+      var d=document.createElement('div'); d.className='item';
+      d.innerHTML='<span style="flex:1">'+t+'</span><span class="x">&times;</span>';
+      d.querySelector('span:first-child').addEventListener('click',function(){
+        panel.classList.remove('show');
+        q.classList.add('open');
+        q.scrollIntoView({behavior:'smooth',block:'center'});
+      });
+      d.querySelector('.x').addEventListener('click',function(e){
+        e.stopPropagation();
+        var k=marks.indexOf(id); if(k>=0)marks.splice(k,1);
+        saveMarks(); applyMarks(); renderPanel();
+      });
+      panelList.appendChild(d);
+    });
+  }
+  fab.addEventListener('click',function(){renderPanel();panel.classList.add('show');});
+  panel.addEventListener('click',function(e){if(e.target===panel)panel.classList.remove('show');});
+  document.getElementById('clrAll').addEventListener('click',function(){
+    marks=[];saveMarks();applyMarks();renderPanel();
+  });
+
+  // ---- importance filter ----
+  var hidden={red:false,orange:false,green:false};
+  function applyFilter(){
+    var term=(document.getElementById('search').value||'').toLowerCase().trim();
+    document.querySelectorAll('.q').forEach(function(q){
+      var imp=q.getAttribute('data-imp');
+      var byLevel=hidden[imp];
+      var txt=(q.querySelector('.qt').textContent+' '+(q.getAttribute('data-kw')||'')).toLowerCase();
+      var bySearch=term && txt.indexOf(term)<0;
+      q.classList.toggle('hidden',byLevel||bySearch);
+    });
+  }
+  document.querySelectorAll('.lg').forEach(function(lg){
+    lg.addEventListener('click',function(){
+      var l=lg.getAttribute('data-l');
+      hidden[l]=!hidden[l];
+      lg.classList.toggle('off',hidden[l]);
+      applyFilter();
+    });
+  });
+
+  // ---- search ----
+  document.getElementById('search').addEventListener('input',applyFilter);
+
+  // ---- quiz mode ----
+  var quizBtn=document.getElementById('quizBtn');
+  quizBtn.addEventListener('click',function(){
+    var on=quizBtn.classList.toggle('on');
+    document.querySelectorAll('.q').forEach(function(q){q.classList.remove('open');});
+    quizBtn.textContent=on?'Quiz activé':'Mode quiz';
+    if(!on) quizBtn.textContent='Mode quiz';
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  // ---- progress bar ----
+  var pb=document.getElementById('progress');
+  function onScroll(){
+    var h=document.documentElement;
+    var max=h.scrollHeight-h.clientHeight;
+    pb.style.width=(max>0?(h.scrollTop/max*100):0)+'%';
+  }
+  window.addEventListener('scroll',onScroll,{passive:true});
+  onScroll();
+
+  // ---- smooth toc ----
+  document.querySelectorAll('nav.toc a').forEach(function(a){
+    a.addEventListener('click',function(e){
+      e.preventDefault();
+      var el=document.querySelector(a.getAttribute('href'));
+      if(el) el.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  });
+})();
+</script>
+</body>
+</html>

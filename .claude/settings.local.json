@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls \"C:\\\\Users\\\\Rachi\\\\Desktop\\\\tou\\\\etudes\\\\2eme\\\\Q2\\\\DEVOPS\" -la 2>/dev/null; echo \"---\"; ls -la \"C:\\\\Users\\\\Rachi\\\\Desktop\\\\tou\\\\etudes\\\\2eme\\\\Q2\\\\DEVOPS\\\\..\")",
+      "Bash(docker --version)",
+      "Bash(docker compose *)",
+      "PowerShell(docker --version)",
+      "Bash(docker-compose up *)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri http://localhost:8080 -TimeoutSec 10 -UseBasicParsing; Write-Output \"Spring Boot: $\\($r.StatusCode\\) - $\\($r.Content.Length\\) bytes\" } catch { Write-Output \"Spring Boot: ERREUR - $\\($_.Exception.Message\\)\" }; try { $r = Invoke-WebRequest -Uri http://localhost:8000 -TimeoutSec 10 -UseBasicParsing; Write-Output \"Django:      $\\($r.StatusCode\\) - $\\($r.Content.Length\\) bytes\" } catch { Write-Output \"Django:      ERREUR - $\\($_.Exception.Message\\)\" })",
+      "Bash(docker-compose down *)",
+      "Bash(git tag *)",
+      "Bash(git push *)"
+    ]
+  }
+}

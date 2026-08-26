@@ -1,0 +1,108 @@
+# ============================================
+# Pipeline CI/CD - A/B Testing
+# ============================================
+
+stages:
+  - compile
+  - test
+  - deploy
+
+# ============================================
+# COMPILE - Spring Boot
+# ============================================
+compile-spring:
+  stage: compile
+  image: maven:3.9-eclipse-temurin-21
+  script:
+    - echo "Compilation Spring Boot..."
+    - cd spring-app
+    - mvn compile
+  artifacts:
+    paths:
+      - spring-app/target/
+    expire_in: 1 hour
+
+# ============================================
+# COMPILE - Django
+# ============================================
+compile-django:
+  stage: compile
+  image: python:3.12-slim
+  script:
+    - echo "Verification Django..."
+    - cd django-app
+    - pip install --no-cache-dir -r requirements.txt
+    - python manage.py check
+
+# ============================================
+# TEST - Spring Boot
+# ============================================
+test-spring:
+  stage: test
+  image: maven:3.9-eclipse-temurin-21
+  dependencies:
+    - compile-spring
+  script:
+    - echo "Tests Spring Boot..."
+    - cd spring-app
+    - mvn test
+
+# ============================================
+# TEST - Django
+# ============================================
+test-django:
+  stage: test
+  image: python:3.12-slim
+  script:
+    - echo "Tests Django..."
+    - cd django-app
+    - pip install --no-cache-dir -r requirements.txt
+    - python manage.py test
+
+# ============================================
+# DEPLOY - Spring Boot (vers AlwaysData)
+# ============================================
+deploy-spring:
+  stage: deploy
+  image: maven:3.9-eclipse-temurin-21
+  dependencies:
+    - compile-spring
+  before_script:
+    # Installation de ssh et scp
+    - apt-get update && apt-get install -y openssh-client
+    # Configuration de la cle SSH
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+    - chmod 600 ~/.ssh/id_deploy
+    - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - echo "Build du JAR Spring Boot..."
+    - cd spring-app
+    - mvn package -DskipTests
+    - echo "Deploiement du JAR vers AlwaysData..."
+    - scp -i ~/.ssh/id_deploy target/abtesting-0.0.1-SNAPSHOT.jar "$SSH_USER@$SSH_HOST:~/www/spring-ab/"
+    - echo "Spring Boot deploye !"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# ============================================
+# DEPLOY - Django (vers AlwaysData)
+# ============================================
+deploy-django:
+  stage: deploy
+  image: python:3.12-slim
+  before_script:
+    - apt-get update && apt-get install -y openssh-client
+    - mkdir -p ~/.ssh
+    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_deploy
+    - chmod 600 ~/.ssh/id_deploy
+    - ssh-keyscan -H "$SSH_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+  script:
+    - echo "Deploiement des fichiers Django vers AlwaysData..."
+    - cd django-app
+    - scp -i ~/.ssh/id_deploy -r manage.py requirements.txt djangoAbTesting demo "$SSH_USER@$SSH_HOST:~/www/django-ab/"
+    - echo "Installation des dependances sur le serveur..."
+    - ssh -i ~/.ssh/id_deploy "$SSH_USER@$SSH_HOST" "cd ~/www/django-ab && source venv/bin/activate && pip install -r requirements.txt && python manage.py migrate"
+    - echo "Django deploye !"
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

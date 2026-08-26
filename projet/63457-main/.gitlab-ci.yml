@@ -1,0 +1,96 @@
+stages:
+  - build
+  - test
+  - deploy
+  - notify
+
+# Build Python avec cache
+build-python:
+  stage: build
+  image: python:3.10-slim
+  cache:
+    key: python-cache
+    paths:
+      - service-python-main/__pycache__/
+      - service-python-main/.venv/
+  before_script:
+    - cd service-python-main
+    - python -m venv .venv
+    - source .venv/bin/activate
+    - pip install -r requirements.txt
+  script:
+    - echo "Compilation Python OK"
+
+# Build Java avec cache
+build-java:
+  stage: build
+  image: maven:3.9.4-eclipse-temurin-17
+  cache:
+    key: maven-cache
+    paths:
+      - .m2/repository
+  script:
+    - cd service-java-main
+    - mvn compile
+  artifacts:
+    paths:
+      - service-java-main/target/
+
+# Test Python
+test-python:
+  stage: test
+  image: python:3.11
+  cache:
+    key: python-cache
+    paths:
+      - service-python-main/.venv/
+  before_script:
+    - cd service-python-main
+    - source .venv/bin/activate || python -m venv .venv && source .venv/bin/activate
+    - pip install -r requirements.txt
+  script:
+    - python -m unittest test_app.py
+
+# Test Java
+test-java:
+  stage: test
+  image: maven:3.9.4-eclipse-temurin-17
+  cache:
+    key: maven-cache
+    paths:
+      - .m2/repository
+  script:
+    - cd service-java-main
+    - mvn test
+
+
+deploy:
+  stage: deploy
+  image:  docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  variables:
+    DOCKER_TLS_CERTDIR: ""
+    DOCKER_HOST: tcp://docker:2375
+  before_script:
+    - apk add --no-cache docker-cli curl bash py3-pip gcc musl-dev python3-dev linux-headers
+    - pip install azure-cli --prefer-binary
+    - az login --service-principal -u "$AZURE_USERNAME" -p "$AZURE_PASSWORD" --tenant "$AZURE_TENANT_ID"
+    - az acr login --name acr63457devops
+  script:
+    - docker build --platform linux/amd64 -t acr63457devops.azurecr.io/spring-service:latest ./service-java-main
+    - docker push acr63457devops.azurecr.io/spring-service:latest
+    - docker build --platform linux/amd64 -t acr63457devops.azurecr.io/flask-service:latest ./service-python-main
+    - docker push acr63457devops.azurecr.io/flask-service:latest
+  only:
+    - main
+
+
+
+
+# Notification en cas d’échec
+notify:
+  stage: notify
+  script:
+    - echo "Une erreur s'est produite dans le pipeline."
+  when: on_failure
