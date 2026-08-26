@@ -1,0 +1,20 @@
+# Artefacts de compilation Maven
+target/
+
+# Wrapper Maven (non utilise dans l'image, on s'appuie sur l'image maven)
+.mvn/
+mvnw
+mvnw.cmd
+
+# Fichiers IDE
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# OS
+.DS_Store
+Thumbs.db

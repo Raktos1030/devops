@@ -1,0 +1,32 @@
+# Cache Python et bytecode
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environnement virtuel local
+venv/
+.venv/
+env/
+
+# Base de donnees SQLite locale (regeneree par les migrations dans l'image)
+db.sqlite3
+db.sqlite3-journal
+
+# Fichiers IDE
+.idea/
+.vscode/
+
+# Git
+.git/
+.gitignore
+
+# Variables d'environnement locales
+.env
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
