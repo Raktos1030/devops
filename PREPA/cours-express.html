@@ -359,10 +359,84 @@ footer{max-width:960px;margin:0 auto;padding:26px 20px 60px;border-top:1px solid
   <div class="prose">
   <p class="lede">Le prof peut pointer <strong>n'importe quelle ligne</strong> d'un fichier que tu as écrit et te demander de l'expliquer. Voici ces fichiers, du plus probable au moins probable, avec <strong>ton code réel</strong>. Si tu n'as le temps que pour trois, fais les trois premiers.</p>
 
-  <div class="note">
-    <b>La règle de tri.</b> Tout ce qui est dans <code>spring-boot/src/</code>, <code>django/demo/</code>, <code>manage.py</code>, <code>pom.xml</code>, <code>mvnw</code> = code de l'école, tu n'as pas à le défendre (« c'est le code applicatif fourni, je n'y ai pas touché »). Tout le reste — Dockerfile, compose, nginx.conf, .gitlab-ci.yml, terraform — c'est toi.
   </div>
+
+  <h3>D'abord : qui a écrit quoi</h3>
+  <div class="prose">
+  <p>C'est la première chose à savoir, parce qu'elle décide de ta réponse. Face à un fichier de l'école : « c'est le code applicatif fourni, je n'y ai pas touché » — et on passe. Face à un fichier à toi : il faut expliquer. Se tromper de catégorie, c'est soit t'attribuer un travail qui n'est pas le tien, soit refuser d'expliquer ce que tu as écrit. Les deux coûtent cher.</p>
   </div>
+
+  <h4><span class="ab va">■</span> Écrit par toi — à défendre à fond (16 fichiers)</h4>
+  <div class="tw">
+  <table>
+    <tr><th>Fichier</th><th>Partie</th></tr>
+    <tr><td><code>.gitlab-ci.yml</code></td><td>P3 + P5</td></tr>
+    <tr><td><code>docker-compose.yml</code></td><td>P1 + P2</td></tr>
+    <tr><td><code>spring-boot/Dockerfile</code> · <code>spring-boot/.dockerignore</code></td><td>P1</td></tr>
+    <tr><td><code>django/Dockerfile</code> · <code>django/.dockerignore</code></td><td>P1</td></tr>
+    <tr><td><code>nginx/Dockerfile</code> · <code>nginx/nginx.conf</code></td><td>P2</td></tr>
+    <tr><td><code>nginx-azure/Dockerfile</code> · <code>nginx-azure/nginx.conf</code></td><td>P6</td></tr>
+    <tr><td><code>terraform/providers.tf</code> · <code>variables.tf</code> · <code>main.tf</code> · <code>outputs.tf</code></td><td>P4</td></tr>
+    <tr><td><code>.gitignore</code> · <code>README.md</code></td><td>toutes</td></tr>
+  </table>
+  </div>
+
+  <h4><span class="ab vb">■</span> Fichiers de l'école que tu as modifiés — les deux pièges</h4>
+  <div class="prose">
+  <p>Ceux-là sont dangereux dans les deux sens : si tu dis « c'est l'école » et que le prof voit ta modification, c'est mauvais. Si tu dis « c'est moi » pour tout le fichier, tu t'attribues du code que tu ne pourras pas expliquer. La bonne formule : <em>« le fichier vient de l'école, j'y ai changé telle chose, pour telle raison »</em>.</p>
+  </div>
+
+  <div class="lines">
+    <div class="k">django/djangoAbTesting/<br>settings.py</div><div class="v">Fichier de l'école. <b>Tu y as changé une ligne :</b> <code>ALLOWED_HOSTS = ['*']</code> (Django refuse par défaut toute requête dont l'en-tête <code>Host</code> n'est pas dans cette liste). <b>Pourquoi :</b> l'application doit répondre sous plusieurs noms — <code>localhost</code>, le nom de service <code>django</code> à l'intérieur du réseau Docker, et le domaine <code>app-django-66045.azurewebsites.net</code> sur Azure. Sans ça, elle renverrait une erreur 400 <em>Bad Request</em> dès qu'on l'appelle autrement que par <code>localhost</code>.</div>
+    <div class="k">spring-boot/pom.xml</div><div class="v">Fichier généré par Spring Initializr et fourni par l'école. <b>Tu l'as nettoyé :</b> retrait des dépendances non utilisées (<code>lombok</code>, <code>devtools</code>) et de la configuration du compilateur qui allait avec, ajout d'un <code>&lt;name&gt;</code> et d'une <code>&lt;description&gt;</code>, et de commentaires expliquant à quoi sert chaque dépendance restante. <b>Pourquoi :</b> une dépendance inutile alourdit le <code>.jar</code>, donc l'image Docker, et ajoute du code qu'on ne maîtrise pas.</div>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Vérifie ces deux points toi-même, en 10 secondes</span>
+    <p>J'ai déduit ces deux modifications en comparant ton dépôt au même projet chez un autre étudiant. Confirme-le sur ta machine, dans le dossier du projet :</p>
+    <pre><code>git log --oneline -- django/djangoAbTesting/settings.py spring-boot/pom.xml</code></pre>
+    <p>S'il y a un commit à toi après le commit initial, c'est confirmé. Sinon, dis simplement « c'est le fichier de l'école ».</p>
+  </div>
+
+  <h4><span style="color:var(--ink2)">■</span> Fourni par l'école — ne le défends pas</h4>
+  <div class="lines">
+    <div class="k">spring-boot/src/**</div><div class="v"><code>AbtestingApplication.java</code> (le point d'entrée), <code>MainController.java</code> (la route <code>/</code>), <code>Statistics.java</code> (le compteur de vues), <code>templates/index.html</code>, <code>application.properties</code>, et les deux classes de test. <b>Vérifié : identiques au projet d'un autre étudiant.</b></div>
+    <div class="k">spring-boot/mvnw<br>mvnw.cmd · .mvn/wrapper/</div><div class="v">Le <b>Maven Wrapper</b> : un script qui télécharge la bonne version de Maven, pour que le projet se compile même sur une machine où Maven n'est pas installé. Généré par Spring Initializr.</div>
+    <div class="k">django/manage.py<br>djangoAbTesting/**</div><div class="v">Le squelette d'un projet Django créé par <code>django-admin startproject</code> : <code>settings.py</code>, <code>urls.py</code>, <code>wsgi.py</code>, <code>asgi.py</code>.</div>
+    <div class="k">django/demo/**</div><div class="v">L'application Django : <code>views.py</code> (le compteur et la page), <code>urls.py</code>, <code>models.py</code> (vide), <code>templates/index.html</code>. <b>Vérifié identique</b> à celui de l'autre étudiant, commentaires compris.</div>
+    <div class="k">django/requirements.txt</div><div class="v">Une seule ligne : <code>django &gt;=4.2.11</code>.</div>
+  </div>
+
+  <div class="say">
+    <span class="tag">Si le prof te demande ce que font les applis</span>
+    <p>Tu dois quand même pouvoir le dire en une phrase, même sans les défendre : « chacune affiche une page qui indique sa version — A ou B — et un compteur de vues. Le compteur est un singleton en mémoire : un <code>@Component</code> Spring côté Java, une instance de module côté Python. Le contenu est volontairement minimal, l'intérêt du projet est ailleurs. »</p>
+  </div>
+
+  <h4><span style="color:var(--ink2)">■</span> Généré automatiquement — personne ne l'a écrit</h4>
+  <p class="prose">C'est la catégorie que tu voulais éclaircir. Aucun de ces fichiers n'a été tapé par un humain : ils sont produits par un outil. Savoir <b>quel outil</b> les produit est une question d'oral très classique.</p>
+  <div class="lines">
+    <div class="k">terraform/<br>.terraform.lock.hcl</div><div class="v">Produit par <code>terraform init</code>. Enregistre la version exacte du provider et ses empreintes. <b>Versionné dans Git</b> (recommandé par le TD 09) pour que tout le monde ait exactement le même provider.</div>
+    <div class="k">terraform/<br>terraform.tfstate</div><div class="v">Produit par <code>terraform apply</code>. La mémoire de Terraform : ce qu'il a créé, avec l'identifiant Azure de chaque ressource. <b>Jamais versionné</b> — il peut contenir des valeurs sensibles. C'est pour ça qu'il n'apparaît pas dans ton dépôt.</div>
+    <div class="k">terraform/.terraform/</div><div class="v">Le dossier où <code>terraform init</code> télécharge le provider. Jamais versionné, il se régénère en une commande.</div>
+    <div class="k">spring-boot/target/</div><div class="v">Produit par <code>mvn compile</code> et <code>mvn package</code> : les <code>.class</code> et le <code>.jar</code>. Jamais versionné — c'est un résultat de compilation. C'est aussi ce dossier que ton pipeline transmet d'un job à l'autre en <code>artifacts</code>.</div>
+    <div class="k">django/db.sqlite3</div><div class="v">Produit par <code>python manage.py migrate</code>. Dans ton projet il est créé <b>à la construction de l'image Docker</b>, pas sur ta machine.</div>
+    <div class="k">__pycache__/</div><div class="v">Produit par Python à l'exécution : le bytecode compilé des modules. Jamais versionné.</div>
+    <div class="k">django/demo/migrations/<br>__init__.py</div><div class="v">Créé par <code>django-admin startapp</code>. Il est <b>vide</b>, et c'est normal : le dossier ne contient aucun fichier de migration puisque le projet ne définit aucun modèle. C'est exactement ce qu'explique le commentaire de ton Dockerfile.</div>
+  </div>
+
+  <div class="say">
+    <span class="tag">La phrase qui résume tout, si on te pose la question</span>
+    <p>« Le code applicatif des deux versions vient de l'école, je n'y ai touché qu'à deux endroits : <code>ALLOWED_HOSTS</code> dans les réglages Django, pour que l'application accepte d'autres noms d'hôte que <code>localhost</code>, et un nettoyage du <code>pom.xml</code>. Tout le reste — les quatre Dockerfile, le compose, les deux configurations Nginx, le pipeline et les quatre fichiers Terraform — c'est mon travail. Et un dernier groupe n'est écrit par personne : le state Terraform, le fichier de verrouillage, <code>target/</code>, la base SQLite — ce sont des sorties d'outils, et à part le fichier de verrouillage, aucune n'est versionnée. »</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Si on te demande ce que tu améliorerais dans le code de l'école</span>
+    <p>Un angle honnête et solide : « les réglages Django sont ceux d'un projet de développement — <code>DEBUG = True</code> et une <code>SECRET_KEY</code> écrite en clair dans le dépôt. Pour un laboratoire ça n'a pas d'importance, mais en production il faudrait <code>DEBUG = False</code>, la clé lue depuis une variable d'environnement, et un <code>ALLOWED_HOSTS</code> limité aux domaines réels plutôt que <code>['*']</code>. Sur Azure ça passerait par les <code>app_settings</code> de l'App Service, exactement comme je le fais déjà pour <code>PORT</code>. »</p>
+  </div>
+
+  <hr>
+
+  <h3>Maintenant, les fichiers un par un</h3>
 
   <!-- ============ 1 ============ -->
   <div class="file">
