@@ -805,31 +805,140 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
   <!-- ============ 5 ============ -->
   <div class="file">
     <div class="file-h"><span class="rank">5</span><span class="fname">terraform/</span></div>
-    <p class="why">4 fichiers, 7 ressources Azure · la partie la plus dense</p>
+    <p class="why">4 fichiers, 7 ressources Azure · la partie la plus dense — on les prend un par un</p>
   </div>
   <div class="prose">
   <p><strong>Infrastructure as Code</strong> : au lieu de cliquer dans le portail Azure pour créer un serveur, tu écris ce que tu veux dans des fichiers <code>.tf</code>, tu versionnes ces fichiers dans Git, et une commande fait exister l'infrastructure. Reproductible, relisible, et destructible d'un coup.</p>
+  <p>Le langage s'appelle <strong>HCL</strong> (HashiCorp Configuration Language). Il est <strong>déclaratif</strong> : tu décris l'état que tu veux, pas les étapes pour y arriver. C'est Terraform qui calcule quoi créer, modifier ou détruire.</p>
+
+  <h4>Le rôle des 4 fichiers</h4>
+  <div class="lines">
+    <div class="k">providers.tf</div><div class="v">Quel « plugin » utiliser pour parler à Azure, et en quelle version.</div>
+    <div class="k">variables.tf</div><div class="v">Les 9 paramètres d'entrée, avec leurs valeurs par défaut.</div>
+    <div class="k">main.tf</div><div class="v">Les 7 ressources à créer. Le cœur.</div>
+    <div class="k">outputs.tf</div><div class="v">Les 3 valeurs affichées à la fin de l'<code>apply</code>.</div>
+  </div>
+  <p>Ce découpage est une <strong>convention</strong>, pas une obligation : Terraform lit tous les <code>.tf</code> d'un dossier et les concatène. Tu pourrais tout mettre dans un seul fichier, ça marcherait — c'est juste illisible.</p>
+
+  <h4>providers.tf</h4>
+  <pre><code>terraform {
+  required_providers {
+    azurerm = {
+      source  = "hashicorp/azurerm"
+      version = "4.66.0"
+    }
+  }
+}
+
+provider "azurerm" {
+  features {}
+}</code></pre>
 
   <div class="lines">
-    <div class="k">providers.tf</div><div class="v">Quel « plugin » Terraform utiliser pour parler à Azure : <code>hashicorp/azurerm</code>, version figée à <code>4.66.0</code>. Le bloc <code>features {}</code> est obligatoire même vide.</div>
-    <div class="k">variables.tf</div><div class="v">9 paramètres avec valeurs par défaut : la région, les noms des ressources, les noms d'images.</div>
-    <div class="k">main.tf</div><div class="v">Les 7 ressources à créer. Le cœur.</div>
-    <div class="k">outputs.tf</div><div class="v">3 valeurs affichées à la fin de l'<code>apply</code> : l'adresse du registre et les deux URLs publiques.</div>
-    <div class="k">.terraform.lock.hcl</div><div class="v">Généré automatiquement, verrouille la version exacte du provider avec ses empreintes. Versionné dans Git, comme le recommande le TD 09.</div>
+    <div class="k">terraform { }</div><div class="v">Un bloc de configuration de Terraform lui-même — pas d'une ressource Azure. On y déclare de quoi il a besoin pour fonctionner.</div>
+    <div class="k">required_providers</div><div class="v">La liste des <b>providers</b> nécessaires. Un provider est le plugin qui sait traduire tes blocs <code>resource</code> en appels à l'API d'une plateforme. Il en existe un par cloud : <code>azurerm</code> pour Azure, <code>aws</code>, <code>google</code>…</div>
+    <div class="k">source =<br>"hashicorp/azurerm"</div><div class="v">Où le télécharger : le provider officiel Azure, publié par HashiCorp sur le registre Terraform.</div>
+    <div class="k">version = "4.66.0"</div><div class="v">Version <b>figée à l'exact</b>. Sans ça, Terraform prendrait la plus récente disponible, et une future version pourrait modifier le schéma d'une ressource et casser mon <code>apply</code>. Si je veux monter de version, je le fais explicitement.</div>
+    <div class="k">provider "azurerm" { }</div><div class="v">La configuration du provider (par opposition à sa simple déclaration au-dessus).</div>
+    <div class="k">features {}</div><div class="v">Bloc <b>obligatoire</b> pour azurerm, même vide. Il sert à activer des comportements optionnels ; vide = tous les défauts.</div>
   </div>
 
-  <h4>Les 7 ressources, et pourquoi chacune est là</h4>
-  <div class="tw">
-  <table>
-    <tr><th>#</th><th>Ressource</th><th>Rôle</th></tr>
-    <tr><td>1</td><td><code>azurerm_resource_group</code></td><td>Le dossier qui contient tout le reste : <code>rg-abtesting-66045</code>.</td></tr>
-    <tr><td>2</td><td><code>azurerm_user_assigned_identity</code></td><td>Le badge sans mot de passe que porteront les App Services.</td></tr>
-    <tr><td>3</td><td><code>azurerm_container_registry</code></td><td>Le registre privé où le pipeline pousse les images. SKU <code>Basic</code> = le moins cher.</td></tr>
-    <tr><td>4</td><td><code>azurerm_role_assignment</code></td><td>Donne le rôle <code>AcrPull</code> au badge sur ce registre. <b>Sans cette ligne, les App Services n'ont pas le droit de télécharger leur image.</b></td></tr>
-    <tr><td>5</td><td><code>azurerm_service_plan</code></td><td>La machine qui héberge les deux applis. Linux, SKU <code>B1</code> : le tier le moins cher qui accepte des conteneurs personnalisés.</td></tr>
-    <tr><td>6&nbsp;·&nbsp;7</td><td>2 × <code>azurerm_linux_web_app</code></td><td>Les deux App Services, un par version.</td></tr>
-  </table>
+  <div class="trap">
+    <span class="tag">La question qui vient toujours sur ce fichier</span>
+    <p class="q">« Il n'y a aucun identifiant Azure là-dedans. Comment Terraform sait-il à quel compte se connecter ? »</p>
+    <p>« C'est volontaire, et c'est ce qui rend mon code portable. Le provider azurerm cherche les identifiants dans un ordre précis : d'abord les variables d'environnement <code>ARM_CLIENT_ID</code>, <code>ARM_CLIENT_SECRET</code>, <code>ARM_TENANT_ID</code>, <code>ARM_SUBSCRIPTION_ID</code>, et à défaut la session <code>az login</code> active sur la machine. En local j'ai une session <code>az login</code>, donc c'est elle qui sert. Si j'écrivais un <code>subscription_id</code> en dur, personne d'autre ne pourrait lancer mon code — et je risquerais de committer un identifiant. »</p>
   </div>
+
+  <div class="note">
+    <b>Le fichier <code>.terraform.lock.hcl</code></b>, à côté, est généré automatiquement par <code>terraform init</code>. Il enregistre la version exacte du provider <b>et ses empreintes cryptographiques</b>. Il est versionné dans Git (le TD 09 le recommande) pour que quiconque clone le dépôt obtienne exactement le même provider, au bit près.
+  </div>
+
+  <h4>variables.tf — 9 variables, toutes sur le même modèle</h4>
+  <pre><code>variable "location" {
+  description = "Azure region"
+  type        = string
+  default     = "francecentral"
+}
+
+variable "resource_group_name" {
+  description = "Name of the resource group"
+  type        = string
+  default     = "rg-abtesting-66045"
+}</code></pre>
+
+  <div class="lines">
+    <div class="k">variable "location"</div><div class="v">Déclare un paramètre d'entrée nommé <code>location</code>. On l'utilisera ailleurs sous la forme <code>var.location</code>.</div>
+    <div class="k">description</div><div class="v">Du texte libre, affiché par <code>terraform plan</code> quand une valeur est demandée. De la documentation.</div>
+    <div class="k">type = string</div><div class="v">Le type attendu. Terraform refusera une valeur d'un autre type. Il en existe d'autres : <code>number</code>, <code>bool</code>, <code>list</code>, <code>map</code>.</div>
+    <div class="k">default</div><div class="v">La valeur utilisée si personne n'en fournit d'autre. <b>Parce qu'elles ont toutes un défaut, mon projet se lance sans aucune configuration supplémentaire</b> : pas de fichier <code>.tfvars</code> à écrire.</div>
+  </div>
+
+  <p>Les 9 : <code>location</code>, <code>resource_group_name</code>, <code>acr_name</code>, <code>identity_name</code>, <code>service_plan_name</code>, <code>spring_app_name</code>, <code>django_app_name</code>, <code>spring_image</code>, <code>django_image</code>.</p>
+
+  <div class="trap">
+    <span class="tag">Trois questions sur les valeurs elles-mêmes</span>
+    <p class="q">« Pourquoi <code>francecentral</code> et pas <code>westeurope</code> comme dans le TD ? »</p>
+    <p>« Azure for Students applique une stratégie qui restreint les régions autorisées. <code>westeurope</code> serait refusée à l'<code>apply</code>. Parmi les régions permises, <code>francecentral</code> est la plus proche de Bruxelles. »</p>
+    <p class="q">« Pourquoi <code>acrabtesting66045</code> sans tiret, alors que <code>app-spring-66045</code> en a ? »</p>
+    <p>« Contrainte Azure : un nom de Container Registry doit faire 5 à 50 caractères <b>alphanumériques uniquement</b> — ni tiret, ni underscore, ni point. Les App Services acceptent les tirets. »</p>
+    <p class="q">« Pourquoi ton matricule dans les noms ? »</p>
+    <p>« Parce que ces noms sont <b>uniques au niveau mondial</b>, pas seulement dans mon abonnement : un ACR expose <code>&lt;nom&gt;.azurecr.io</code> et une web app <code>&lt;nom&gt;.azurewebsites.net</code>, ce sont des noms DNS publics. Le matricule garantit qu'ils ne sont pas déjà pris. »</p>
+  </div>
+
+  <h4>main.tf — les 5 premières ressources</h4>
+  <p>La syntaxe est toujours la même : <code>resource "&lt;type&gt;" "&lt;étiquette&gt;" { … }</code>. Le <b>type</b> est imposé par le provider ; l'<b>étiquette</b> est un nom que tu choisis, pour référencer la ressource ailleurs dans ton code.</p>
+
+  <pre><code>resource "azurerm_resource_group" "rg" {
+  name     = var.resource_group_name
+  location = var.location
+}
+
+resource "azurerm_user_assigned_identity" "identity" {
+  name                = var.identity_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+}
+
+resource "azurerm_container_registry" "acr" {
+  name                = var.acr_name
+  resource_group_name = azurerm_resource_group.rg.name
+  location            = azurerm_resource_group.rg.location
+  sku                 = "Basic"
+  admin_enabled       = true
+}
+
+resource "azurerm_role_assignment" "acr_pull" {
+  scope                = azurerm_container_registry.acr.id
+  role_definition_name = "AcrPull"
+  principal_id         = azurerm_user_assigned_identity.identity.principal_id
+}
+
+resource "azurerm_service_plan" "app_service_plan" {
+  name                = var.service_plan_name
+  location            = var.location
+  resource_group_name = azurerm_resource_group.rg.name
+  os_type             = "Linux"
+  sku_name            = "B1"
+}</code></pre>
+
+  <div class="lines">
+    <div class="k">azurerm_resource_group</div><div class="v">Le <b>groupe de ressources</b> : un conteneur logique qui regroupe tout le projet côté Azure. Toutes les autres ressources s'y rattachent. C'est aussi l'unité de suppression : vider ce groupe, c'est tout supprimer.</div>
+    <div class="k">azurerm_resource_group<br>.rg.name</div><div class="v">Une <b>référence</b> à la ressource déclarée juste au-dessus : <code>&lt;type&gt;.&lt;étiquette&gt;.&lt;attribut&gt;</code>. C'est le mécanisme central de Terraform : en lisant cette référence, il comprend qu'il doit créer le groupe <b>avant</b> l'identité. Le graphe de dépendances est déduit tout seul, tu n'ordonnes jamais rien à la main.</div>
+    <div class="k">azurerm_user_assigned<br>_identity</div><div class="v">Une <b>identité managée</b> : un compte Azure sans mot de passe, géré par Azure lui-même. <em>User assigned</em> = elle existe comme ressource indépendante et peut être attachée à plusieurs services — ici, tes deux App Services partagent la même. L'autre forme, <em>system assigned</em>, naîtrait et mourrait avec une seule ressource.</div>
+    <div class="k">azurerm_container_registry</div><div class="v">Ton <b>registre Docker privé</b> chez Azure, celui où le pipeline pousse les images.</div>
+    <div class="k">sku = "Basic"</div><div class="v">Le niveau tarifaire du registre : le moins cher, largement suffisant pour deux images.</div>
+    <div class="k">admin_enabled = true</div><div class="v">Active un compte administrateur avec identifiant et mot de passe sur le registre. Utile comme méthode d'authentification de secours pour un <code>docker login</code> classique. <b>Si on te demande de critiquer ton code, c'est le bon endroit</b> : ce compte n'est pas indispensable puisque le pipeline se connecte avec le Service Principal, et le désactiver réduirait la surface d'attaque.</div>
+    <div class="k">azurerm_role_assignment</div><div class="v">L'<b>autorisation</b>. Une identité sans droits ne peut rien faire : ce bloc dit « cette identité a le droit de faire ceci, sur cette ressource ». Sans lui, les App Services démarreraient et échoueraient à télécharger leur image.</div>
+    <div class="k">scope = …acr.id</div><div class="v">Sur quoi porte le droit : uniquement ce registre. Pas sur tout l'abonnement.</div>
+    <div class="k">role_definition_name<br>= "AcrPull"</div><div class="v">Quel droit : <b>lire</b> des images. Pas <code>AcrPush</code> — c'est le pipeline qui pousse, pas l'App Service. <b>Moindre privilège</b> : chaque identité n'a que ce dont elle a besoin.</div>
+    <div class="k">principal_id = …<br>.identity.principal_id</div><div class="v">À qui on donne le droit. Attention, une identité managée a <b>deux</b> identifiants différents et tu utilises les deux : le <code>principal_id</code> désigne l'identité <em>en tant que titulaire de droits</em> (c'est ce qu'attend une attribution de rôle), le <code>client_id</code> la désigne <em>en tant que compte qui s'authentifie</em> (c'est ce qu'attend la configuration de l'App Service, plus bas).</div>
+    <div class="k">azurerm_service_plan</div><div class="v">La <b>machine</b> qui fera tourner les applications, et le tarif associé.</div>
+    <div class="k">os_type = "Linux"</div><div class="v">Tes conteneurs sont des conteneurs Linux.</div>
+    <div class="k">sku_name = "B1"</div><div class="v">Le niveau <em>Basic 1</em> : le moins cher qui accepte des conteneurs personnalisés — les niveaux Free et Shared ne les prennent pas en charge. <b>Un seul plan pour les deux applications</b>, ce qui évite de payer deux fois.</div>
+  </div>
+
+  <h4>main.tf — les deux App Services</h4>
+  <p>Les deux blocs sont identiques à trois valeurs près : le nom, l'image, et le port. Voici celui de Spring ; celui de Django ne change que <code>var.django_app_name</code>, <code>var.django_image</code> et <code>PORT = "8000"</code>.</p>
 
   <pre><code>resource "azurerm_linux_web_app" "spring" {
   name                = var.spring_app_name
@@ -858,13 +967,14 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
 }</code></pre>
 
   <div class="lines">
-    <div class="k">resource "type" "nom"</div><div class="v">Le type est imposé par le provider ; le second nom (<code>"spring"</code>) est <b>ton</b> étiquette interne, pour référencer la ressource ailleurs dans le code.</div>
-    <div class="k">var.spring_app_name</div><div class="v">Renvoie à la variable définie dans <code>variables.tf</code>, ici <code>app-spring-66045</code>.</div>
-    <div class="k">azurerm_resource_group<br>.rg.name</div><div class="v">Une référence à une <b>autre</b> ressource. C'est comme ça que Terraform déduit tout seul l'ordre de création : il ne peut pas créer l'App Service avant le Resource Group dont il lit le nom. Ce graphe de dépendances est implicite, tu n'as rien à ordonner.</div>
-    <div class="k">container_registry_use<br>_managed_identity = true</div><div class="v">« Pour te connecter au registre, utilise ton badge, pas un mot de passe. »</div>
-    <div class="k">application_stack { }</div><div class="v">Quelle image faire tourner (<code>spring-boot:latest</code>) et depuis quel registre.</div>
-    <div class="k">identity { type =<br>"UserAssigned" }</div><div class="v">Attache concrètement le badge à cet App Service. <em>UserAssigned</em> = une identité créée séparément et réutilisable, par opposition à <em>SystemAssigned</em> qui naîtrait et mourrait avec la ressource. Ici une seule identité sert aux deux applis.</div>
-    <div class="k">app_settings = {<br>PORT = "8080" }</div><div class="v">Une variable d'environnement passée au conteneur : elle dit à Azure sur quel port l'application écoute. <code>8080</code> pour Spring, <code>8000</code> pour Django.</div>
+    <div class="k">service_plan_id</div><div class="v">Sur quelle machine tourner. Les deux applications pointent vers le même plan.</div>
+    <div class="k">site_config { }</div><div class="v">La configuration d'exécution : où trouver l'image, comment s'y authentifier.</div>
+    <div class="k">container_registry_use<br>_managed_identity = true</div><div class="v">« Pour te connecter au registre, utilise ton badge, pas un identifiant et un mot de passe. »</div>
+    <div class="k">…managed_identity<br>_client_id</div><div class="v">Quel badge présenter — d'où le <code>client_id</code>, la face « je m'authentifie » de l'identité (voir plus haut).</div>
+    <div class="k">application_stack { }</div><div class="v">Quoi faire tourner : l'image <code>spring-boot:latest</code>, prise dans mon registre.</div>
+    <div class="k">docker_registry_url =<br>"https://${…login_server}"</div><div class="v">La syntaxe <code>${…}</code> est une <b>interpolation</b> : insérer la valeur d'une expression dans une chaîne de caractères. Ici, l'adresse du registre est lue sur la ressource ACR elle-même plutôt que réécrite à la main — si le nom du registre change, l'URL suit automatiquement.</div>
+    <div class="k">identity {<br>type = "UserAssigned"<br>identity_ids = [ … ] }</div><div class="v">Attache réellement l'identité à cette application. Les crochets indiquent une <b>liste</b> : Azure autorise plusieurs identités, on n'en met qu'une.</div>
+    <div class="k">app_settings = {<br>PORT = "8080" }</div><div class="v">Des variables d'environnement passées au conteneur. <code>PORT</code> indique à App Service sur quel port l'application écoute — 8080 pour Spring, 8000 pour Django.</div>
   </div>
 
   <div class="trap">
@@ -874,29 +984,49 @@ CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]</code></pre>
   </div>
 
   <div class="trap">
-    <span class="tag">Deux questions déjà annoncées par le prof</span>
-    <p class="q">« Si je prends ton Terraform et que je le lance sur MON compte Azure ? »</p>
-    <p>« En théorie, rien à modifier : le provider azurerm cherche d'abord les variables d'environnement <code>ARM_*</code>, sinon la session <code>az login</code> active — c'est pour ça qu'il n'y a aucun <code>subscription_id</code> écrit en dur dans mon code. Vous faites <code>az login</code>, <code>terraform init</code>, <code>terraform apply</code>. Deux réserves : si votre abonnement restreint les régions autrement, il faudra ajuster <code>-var="location=…"</code> ; et comme les noms d'ACR et d'App Service sont <strong>uniques au niveau mondial</strong>, il faudra changer ceux qui contiennent mon matricule. »</p>
-    <p class="q">« Montre-moi ce que Terraform a créé. »</p>
-    <p><code>terraform state list</code> pour ce que Terraform croit avoir créé, <code>az resource list -g rg-abtesting-66045 -o table</code> pour ce qui existe vraiment côté Azure, <code>terraform output</code> pour les URLs.</p>
+    <span class="tag">Une question de conception probable</span>
+    <p class="q">« Deux blocs quasi identiques… pourquoi pas une boucle ? »</p>
+    <p>« Terraform a <code>for_each</code>, vu au TD 09, et j'aurais pu écrire une <code>map</code> des deux applications avec leur image et leur port. Pour deux ressources qui diffèrent sur trois valeurs, j'ai jugé la version explicite plus lisible — et surtout plus facile à défendre ligne par ligne. À dix applications, j'aurais bouclé. »</p>
   </div>
 
-  <div class="trap">
-    <span class="tag">Deux contraintes de nommage Azure à connaître</span>
-    <p>Regarde tes propres valeurs par défaut : <code>acrabtesting66045</code> n'a <b>ni tiret ni underscore</b>, alors que <code>app-spring-66045</code> en a. Ce n'est pas une inattention : un nom d'ACR doit faire 5 à 50 caractères <b>alphanumériques uniquement</b>. Et dans les deux cas le nom doit être unique <b>sur tout Azure</b>, d'où le matricule.</p>
-  </div>
+  <h4>outputs.tf</h4>
+  <pre><code>output "acr_login_server" {
+  description = "URL of the Azure Container Registry"
+  value       = azurerm_container_registry.acr.login_server
+}
 
-  <h4>Les 5 commandes Terraform</h4>
+output "spring_app_url" {
+  description = "URL of the Spring Boot web app"
+  value       = "https://${azurerm_linux_web_app.spring.default_hostname}"
+}</code></pre>
+
   <div class="lines">
-    <div class="k">terraform init</div><div class="v">Télécharge le provider. À faire une fois, au début.</div>
-    <div class="k">terraform validate</div><div class="v">Vérifie que la syntaxe tient debout, sans rien créer.</div>
-    <div class="k">terraform plan</div><div class="v">Affiche ce qui <b>serait</b> créé, modifié ou détruit. Rien n'est appliqué.</div>
-    <div class="k">terraform apply</div><div class="v">Fait converger le réel vers ce que décrit ton code.</div>
+    <div class="k">output "…"</div><div class="v">Une valeur affichée à la fin de <code>terraform apply</code>, et récupérable ensuite avec <code>terraform output</code>.</div>
+    <div class="k">value = …<br>.login_server</div><div class="v">Un attribut <b>connu seulement après la création</b> : Terraform ne peut pas le deviner avant qu'Azure ait répondu. C'est tout l'intérêt des outputs — récupérer ce qu'on ne pouvait pas savoir d'avance.</div>
+    <div class="k">"https://${…<br>default_hostname}"</div><div class="v">Azure renvoie un nom d'hôte nu (<code>app-spring-66045.azurewebsites.net</code>) ; on le préfixe pour en faire une URL cliquable.</div>
+  </div>
+  <p>À quoi ça sert concrètement : après l'<code>apply</code>, tu as immédiatement l'adresse du registre pour le <code>docker login</code> et les deux URLs à tester, sans aller cliquer dans le portail.</p>
+
+  <h4>Les 5 commandes</h4>
+  <div class="lines">
+    <div class="k">terraform init</div><div class="v">Télécharge le provider et crée le dossier <code>.terraform/</code>. À faire une fois, au début, et à refaire si tu changes de version de provider.</div>
+    <div class="k">terraform validate</div><div class="v">Vérifie la syntaxe et la cohérence, sans rien créer et sans contacter Azure.</div>
+    <div class="k">terraform plan</div><div class="v">Compare ton code, le state et la réalité, puis affiche ce qui <b>serait</b> créé, modifié ou détruit. Rien n'est appliqué. C'est le filet de sécurité.</div>
+    <div class="k">terraform apply</div><div class="v">Exécute ce plan et fait converger le réel vers ton code.</div>
     <div class="k">terraform destroy</div><div class="v">Détruit tout ce qui figure dans le state. <b>Irréversible — ne le lance pas avant la défense.</b></div>
   </div>
 
-  <div class="note">
-    <b>Le state, si on te le demande.</b> Le fichier <code>terraform.tfstate</code> est la mémoire de Terraform : la liste de ce qu'il a créé et sous quelle identité Azure. C'est en comparant ce state, ton code et la réalité du cloud qu'il décide quoi faire. Il n'est pas versionné dans Git — il peut contenir des valeurs sensibles.
+  <div class="say">
+    <span class="tag">Le state — la notion la plus importante de Terraform</span>
+    <p>« Le fichier <code>terraform.tfstate</code> est la <strong>mémoire</strong> de Terraform : la liste de ce qu'il a créé et l'identifiant Azure de chaque ressource. À chaque commande, il compare trois choses — ce que dit mon code, ce que dit le state, et ce qui existe réellement sur Azure — pour décider quoi faire. Sans state, il ne saurait pas distinguer une ressource qu'il doit créer d'une ressource qu'il a déjà créée. Il n'est pas versionné dans Git : il contient des identifiants et parfois des valeurs sensibles. En équipe, on le stocke sur un backend distant partagé. »</p>
+  </div>
+
+  <div class="trap">
+    <span class="tag">Les deux questions déjà annoncées par le prof</span>
+    <p class="q">« Si je prends ton Terraform et que je le lance sur MON compte Azure ? »</p>
+    <p>« En théorie rien à modifier : vous faites <code>az login</code> avec votre compte, puis <code>terraform init</code> et <code>terraform apply</code> — le provider utilisera votre session. Deux réserves : si votre abonnement autorise d'autres régions, il faudra passer <code>-var="location=…"</code> ; et comme les noms d'ACR et d'App Service sont uniques mondialement, il faudra changer ceux qui contiennent mon matricule, avec <code>-var</code> ou un fichier <code>terraform.tfvars</code>. »</p>
+    <p class="q">« Montre-moi les ressources que ton Terraform a créées. »</p>
+    <p><code>terraform state list</code> pour ce que Terraform a en mémoire · <code>terraform output</code> pour les URLs · <code>az resource list -g rg-abtesting-66045 -o table</code> pour ce qui existe vraiment côté Azure. Les trois doivent concorder.</p>
   </div>
   </div>
 
